@@ -254,7 +254,9 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
 /* ---------- 02 · Acceso controlado ---------- */
 .secure__media{aspect-ratio:2/1;box-shadow:0 50px 90px -50px rgba(0,0,0,.7)}
-.secure__media img{object-position:50% 60%}
+.secure__media{aspect-ratio:16/9}
+.secure__media picture{position:absolute;inset:0}
+.secure__media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 60%}
 .secure__facts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
 .secure__facts li{display:flex;align-items:center;gap:14px;min-height:84px;padding:16px 18px;border:1px solid var(--line-l);border-radius:16px;background:rgba(255,255,255,.04);font-size:15.5px;color:#D7E1E7;transition:border-color .3s,background .3s,transform .35s var(--ease)}
 .secure__facts li:hover{border-color:var(--gold-2);background:rgba(221,187,132,.06);transform:translateY(-3px)}
@@ -670,7 +672,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .route3{grid-template-columns:1fr}
   .route3 li{display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center}
   .route3__n{grid-row:span 2;margin:0}
-  .secure__media{aspect-ratio:4/3}
+  .secure__media{aspect-ratio:4/5}
+  .secure__media img{object-position:50% 62%}
   .ensenada__media{max-width:none}
   .proto__plans .plan img{height:180px}
   .explore--wide,.explore--tall{grid-template-columns:1fr}
