@@ -52,17 +52,18 @@
     <span class="loader__bar"><i></i></span>
   </div>
 
+  <!-- Menú fijo siempre visible, con barra de progreso de lectura -->
   <header class="nav" data-nav>
     <a class="nav__logo" href="#inicio" aria-label="Punta Pacífico, ir al inicio">
       <img src="assets/brand/logo-blanco.png" alt="Punta Pacífico · Oceanview Living Ensenada" width="160" height="77">
     </a>
     <nav class="nav__links" aria-label="Secciones">
       <a href="#asesor">Tu asesor</a>
-      <a href="#residencias">Residencias</a>
+      <a href="#residencias">Casas</a>
+      <a href="#roof">Roof garden</a>
       <a href="#amenidades">Amenidades</a>
       <a href="#plusvalia">Plusvalía</a>
       <a href="#pagos">Pagos</a>
-      <a href="#material">Brochure</a>
     </nav>
     <div class="nav__cta">
       <a class="btn btn--ghost btn--sm" data-wa data-wa-origin="nav" href="#" target="_blank" rel="noopener">
@@ -70,57 +71,65 @@
       </a>
       <button class="btn btn--gold btn--sm" data-open-form="visita">Agendar visita</button>
     </div>
-    <button class="nav__burger" aria-label="Abrir menú" aria-expanded="false" data-burger><span></span><span></span></button>
+    <button class="nav__burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="mnav" data-burger><span></span><span></span></button>
+    <span class="nav__progress" aria-hidden="true"><i data-progress></i></span>
   </header>
 
-  <div class="mnav" data-mnav hidden>
-    <a href="#asesor">Tu asesor</a>
-    <a href="#seguridad">Acceso controlado</a>
-    <a href="#residencias">Residencias</a>
-    <a href="#amenidades">Amenidades</a>
-    <a href="#plusvalia">Plusvalía</a>
-    <a href="#pagos">Formas de pago</a>
-    <a href="#material">Brochure y análisis</a>
-    <button class="btn btn--gold" data-open-form="visita">Agendar visita</button>
+  <div class="mnav" id="mnav" data-mnav hidden>
+    <a href="#asesor"><small>01</small>Tu asesor</a>
+    <a href="#seguridad"><small>02</small>Acceso controlado</a>
+    <a href="#residencias"><small>05</small>Casas 2R y 3R</a>
+    <a href="#roof"><small>08</small>Roof garden</a>
+    <a href="#amenidades"><small>10</small>Amenidades</a>
+    <a href="#plusvalia"><small>11</small>Plusvalía</a>
+    <a href="#pagos"><small>12</small>Formas de pago</a>
+    <a href="#material"><small>13</small>Brochure y análisis</a>
+    <button class="btn btn--gold btn--lg" data-open-form="visita">Agendar visita</button>
   </div>
 
   <main id="contenido">
 
-    <!-- 1 · HERO -->
+    <!-- HERO -->
     <section class="hero" id="inicio" data-enter>
       <div class="hero__media">
-        <video class="hero__video" autoplay muted loop playsinline preload="auto" poster="assets/video/hero-reel.jpg">
+        <video class="hero__video" autoplay muted loop playsinline preload="auto" poster="assets/video/hero-reel.jpg" aria-hidden="true">
           <source src="assets/video/hero-reel.mp4" type="video/mp4">
         </video>
-        <img class="hero__img" src="assets/img/roof-vista.webp" alt="Roof garden con pérgola y vista a la bahía de Ensenada" width="1600" height="900">
+        <img class="hero__img" src="assets/img/roof-vista.webp" alt="Roof garden con pérgola y vista a la bahía de Ensenada" width="1430" height="1155">
         <div class="hero__shade"></div>
       </div>
 
       <div class="hero__inner wrap">
         <div class="hero__copy">
           <p class="eyebrow hero__eyebrow"><span class="dot"></span> Preventa · Zona Norte de Ensenada, B.C.</p>
-          <h1 class="hero__title" data-split>Casas con roof garden<br>frente al <em>Pacífico.</em></h1>
+          <h1 class="hero__title"><span class="line"><span>Casas con roof garden</span></span><span class="line"><span>frente al <em>Pacífico.</em></span></span></h1>
           <p class="hero__lead">Casas de un nivel con vista al mar y montañas, en clúster privado con acceso controlado. Equipadas desde la entrega.</p>
 
           <div class="hero__price">
             <span class="hero__from">Desde</span>
-            <span class="hero__amount">$3.9 <small>MDP</small></span>
+            <span class="hero__amount">$<span data-count="3.9" data-decimals="1" data-hero>3.9</span> <small>MDP</small></span>
             <span class="hero__note"><b>10% de enganche</b> · 10% en 20 mensualidades · 80% contra entrega 2028</span>
           </div>
 
           <div class="hero__ctas">
-            <button class="btn btn--gold btn--lg" data-open-form="visita">Agendar mi visita
-              <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg>
+            <button class="btn btn--gold btn--lg magnetic" data-open-form="visita">Agendar mi visita
+              <svg class="ico ico--arrow" aria-hidden="true"><use href="#i-arrow"/></svg>
             </button>
             <button class="btn btn--glass btn--lg" data-gate="brochure">
               <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg> Pedir el brochure
             </button>
           </div>
+
+          <ul class="hero__trust">
+            <li><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>SiSol · 25+ años</li>
+            <li><svg class="ico" aria-hidden="true"><use href="#i-bank"/></svg>Respaldo INVEX</li>
+            <li><svg class="ico" aria-hidden="true"><use href="#i-key"/></svg>Entrega 2028</li>
+          </ul>
         </div>
 
         <aside class="hero__card" aria-label="Video del desarrollo">
           <div class="hero__reel">
-            <video autoplay muted loop playsinline preload="metadata" poster="assets/video/hero-reel.jpg">
+            <video autoplay muted loop playsinline preload="metadata" poster="assets/video/hero-reel.jpg" aria-label="Recorrido en video por Punta Pacífico">
               <source src="assets/video/hero-reel.mp4" type="video/mp4">
             </video>
           </div>
@@ -131,68 +140,79 @@
           </a>
         </aside>
       </div>
+
+      <a class="hero__scroll" href="#asesor" aria-label="Bajar a la siguiente sección"><span></span></a>
     </section>
 
-    <!-- 2 · ASESOR (sube para generar confianza) -->
+    <div class="band" aria-hidden="true">
+      <div class="band__track">
+        <span>Roof garden privado</span><i>✦</i><span>Vista al mar y montañas</span><i>✦</i><span>Acceso controlado</span><i>✦</i><span>Smart home incluido</span><i>✦</i><span>Alberca · Pickleball · Asadores</span><i>✦</i><span>Entrega 2028</span><i>✦</i>
+        <span>Roof garden privado</span><i>✦</i><span>Vista al mar y montañas</span><i>✦</i><span>Acceso controlado</span><i>✦</i><span>Smart home incluido</span><i>✦</i><span>Alberca · Pickleball · Asadores</span><i>✦</i><span>Entrega 2028</span><i>✦</i>
+      </div>
+    </div>
+
+    <!-- 01 · ASESOR -->
     <section class="agent section" id="asesor">
       <div class="wrap agent__grid">
-        <div class="agent__photos">
-          <figure class="ph ph--main"><img src="assets/img/p/fran-roof.webp" alt="Fran Morishita en un roof garden con vista al mar al atardecer" loading="lazy" width="760" height="1350"></figure>
-          <figure class="ph ph--a"><img src="assets/img/p/fran-asesoria.webp" alt="Fran explicando planos a una pareja" loading="lazy" width="760" height="1350"></figure>
-          <figure class="ph ph--b"><img src="assets/img/p/fran-cocina.webp" alt="Fran mostrando la cocina a unos compradores" loading="lazy" width="760" height="1350"></figure>
+        <div class="agent__media">
+          <figure class="frame frame--45" data-reveal="clip">
+            <img src="assets/img/v3/fran-roof.webp" alt="Fran Morishita, asesor de ventas de Punta Pacífico, en un roof garden frente al mar" loading="lazy" width="760" height="950">
+          </figure>
+          <div class="float-card float-card--a"><span class="live"></span><span><b>En línea hoy</b><small>Respondo el mismo día</small></span></div>
+          <div class="float-card float-card--b"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg><span><b>646 256 3006</b><small>WhatsApp directo</small></span></div>
         </div>
         <div class="agent__copy">
-          <p class="eyebrow">Tu asesor</p>
-          <h2 class="h2" data-split>Hola, soy <em>Fran Morishita.</em><br>Yo te atiendo de principio a fin.</h2>
-          <p class="lead">Soy asesor de ventas de Punta Pacífico. Te enseño el desarrollo en persona o por videollamada, te comparto disponibilidad y promociones de la semana, y armo contigo la corrida de pagos que se ajusta a tu objetivo: vivir, retirarte o invertir.</p>
-          <ul class="agent__perks">
-            <li><b>Respuesta el mismo día</b><span>por WhatsApp, llamada o correo</span></li>
-            <li><b>Visitas guiadas</b><span>al terreno y al punto de venta</span></li>
-            <li><b>Acompañamiento</b><span>del apartado a la entrega de tu casa</span></li>
-          </ul>
-          <div class="agent__ctas">
-            <a class="btn btn--wa btn--lg" data-wa data-wa-origin="asesor" href="#" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Escribirle a Fran</a>
+          <p class="eyebrow" data-reveal>01 · Tu asesor</p>
+          <h2 class="h2" data-split>Hola, soy <em>Fran Morishita.</em><br>Te acompaño de principio a fin.</h2>
+          <p class="lead" data-reveal>Soy asesor de ventas de Punta Pacífico. Te enseño el desarrollo en persona o por videollamada, te comparto disponibilidad y promociones de la semana, y armamos juntos la corrida de pagos que va con tu objetivo: vivir, retirarte o invertir.</p>
+          <ol class="route3" data-stagger>
+            <li><span class="route3__n">1</span><b>Me escribes</b><span>por WhatsApp, llamada o correo</span></li>
+            <li><span class="route3__n">2</span><b>Visitamos</b><span>el terreno o por videollamada</span></li>
+            <li><span class="route3__n">3</span><b>Apartas tu casa</b><span>con la corrida que te conviene</span></li>
+          </ol>
+          <div class="cta-row" data-reveal>
+            <a class="btn btn--wa btn--lg magnetic" data-wa data-wa-origin="asesor" href="#" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Escribirle a Fran</a>
             <button class="btn btn--line-dark btn--lg" data-open-form="visita">Agendar visita</button>
           </div>
-          <p class="agent__mail"><a href="tel:+526462563006">646 256 3006</a> · <a href="mailto:fmejiam@sisol.com.mx">fmejiam@sisol.com.mx</a></p>
         </div>
       </div>
     </section>
 
-    <!-- 3 · ACCESO CONTROLADO -->
+    <!-- 02 · ACCESO CONTROLADO -->
     <section class="secure section section--dark" id="seguridad">
-      <div class="wrap secure__grid">
-        <div class="secure__copy">
-          <p class="eyebrow eyebrow--gold">Acceso controlado</p>
-          <h2 class="h2" data-split>Un clúster privado<br><em>pensado para tu tranquilidad.</em></h2>
-          <p class="lead">120 viviendas dentro de barda perimetral, con caseta de acceso, estacionamiento de visitas y amenidades solo para residentes.</p>
-          <ul class="facts">
-            <li><b>120</b><span>viviendas en el clúster 1</span></li>
-            <li><b>24/7</b><span>caseta de acceso controlado</span></li>
-            <li><b>100%</b><span>barda perimetral</span></li>
-          </ul>
+      <div class="wrap">
+        <div class="section__head section__head--split">
+          <div>
+            <p class="eyebrow eyebrow--gold" data-reveal>02 · Acceso controlado</p>
+            <h2 class="h2" data-split>Un clúster privado<br><em>pensado para tu tranquilidad.</em></h2>
+          </div>
+          <p class="lead" data-reveal>Llegas a casa por un acceso con caseta, dentro de barda perimetral y con amenidades solo para residentes.</p>
         </div>
-        <div class="secure__photos">
-          <figure class="ph ph--tall"><img src="assets/img/p/acceso-guardia.webp" alt="Residente llegando a la caseta de acceso controlado" loading="lazy" width="760" height="1350"></figure>
-          <figure class="ph ph--wide"><img src="assets/img/acceso.webp" alt="Entrada residencial de Punta Pacífico" loading="lazy" width="1600" height="900"></figure>
-          <figure class="ph ph--sq"><img src="assets/img/p/llegada.webp" alt="Familia llegando a su casa en Punta Pacífico" loading="lazy" width="760" height="1350"></figure>
-        </div>
+        <figure class="frame secure__media" data-reveal="clip">
+          <img src="assets/img/v3/acceso-render.webp" alt="Render oficial de la entrada con caseta de acceso controlado de Punta Pacífico" loading="lazy" width="1800" height="1370">
+        </figure>
+        <ul class="secure__facts" data-stagger>
+          <li><b data-count="120">120</b><span>viviendas en el clúster</span></li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg><span>Caseta de acceso controlado</span></li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-wall"/></svg><span>Barda perimetral</span></li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-car"/></svg><span>Estacionamiento de visitas</span></li>
+        </ul>
       </div>
     </section>
 
-    <!-- 4 · ENSENADA -->
+    <!-- 03 · ENSENADA -->
     <section class="ensenada section" id="ensenada">
       <div class="wrap ensenada__grid">
-        <div class="ensenada__media">
-          <video autoplay muted loop playsinline preload="none" poster="assets/video/aereo-terreno.jpg" data-lazy-video aria-label="Vista aérea del desarrollo">
+        <figure class="frame frame--45 ensenada__media" data-reveal="clip">
+          <video muted loop playsinline preload="none" poster="assets/video/aereo-terreno.jpg" data-lazy-video aria-label="Vista aérea del terreno de Punta Pacífico">
             <source data-src="assets/video/aereo-terreno.mp4" type="video/mp4">
           </video>
-        </div>
+        </figure>
         <div class="ensenada__copy">
-          <p class="eyebrow">Ensenada</p>
+          <p class="eyebrow" data-reveal>03 · Ensenada</p>
           <h2 class="h2" data-split>Vive entre el mar,<br>las montañas y <em>el vino.</em></h2>
-          <p class="lead">Ensenada destaca como destino turístico y de inversión: conectividad, oferta vitivinícola, gastronomía de primer nivel y cercanía con la frontera de Estados Unidos.</p>
-          <ul class="pillars">
+          <p class="lead" data-reveal>Ensenada destaca como destino turístico y de inversión: conectividad, oferta vitivinícola, gastronomía de primer nivel y cercanía con la frontera de Estados Unidos.</p>
+          <ul class="pillars" data-stagger>
             <li class="pillar"><span class="pillar__n">i</span><div><h3>Ubicación privilegiada</h3><p>Zona norte, el área con mayor potencial de crecimiento y plusvalía en constante aumento.</p></div></li>
             <li class="pillar"><span class="pillar__n">ii</span><div><h3>Destino ideal para el retiro</h3><p>Clima privilegiado, entorno tranquilo y servicios al alcance.</p></div></li>
             <li class="pillar"><span class="pillar__n">iii</span><div><h3>Inversión con futuro</h3><p>Ciudad en crecimiento, impulsada por proyectos de alto rendimiento.</p></div></li>
@@ -201,44 +221,44 @@
       </div>
     </section>
 
-    <!-- 5 · UBICACION -->
+    <!-- 04 · UBICACION -->
     <section class="location section section--dark" id="ubicacion">
       <div class="wrap">
         <div class="section__head">
-          <p class="eyebrow eyebrow--gold">Ubicación</p>
+          <p class="eyebrow eyebrow--gold" data-reveal>04 · Ubicación</p>
           <h2 class="h2" data-split>A 30 minutos de Valle de Guadalupe,<br><em>a hora y media de la frontera.</em></h2>
         </div>
         <div class="location__grid">
-          <figure class="location__map">
+          <figure class="frame location__map" data-reveal="clip">
             <img src="assets/img/mapa-ensenada.webp" alt="Mapa de Punta Pacífico y los puntos de interés de Ensenada" loading="lazy" width="1800" height="1375">
           </figure>
           <div class="location__list">
-            <ol class="routes">
-              <li class="route"><span class="route__place">Caseta de San Miguel</span><span class="route__km">6 km</span><span class="route__time">10 min</span></li>
-              <li class="route"><span class="route__place">Valle de Guadalupe</span><span class="route__km">27 km</span><span class="route__time">30 min</span></li>
-              <li class="route"><span class="route__place">Tijuana</span><span class="route__km">108 km</span><span class="route__time">1 h 10 min</span></li>
-              <li class="route"><span class="route__place">Frontera EE. UU. · San Ysidro</span><span class="route__km">125 km</span><span class="route__time">1 h 30 min</span></li>
-              <li class="route"><span class="route__place">Mexicali</span><span class="route__km">250 km</span><span class="route__time">3 h</span></li>
+            <ol class="routes" data-stagger>
+              <li class="route"><span class="route__place">Caseta de San Miguel</span><span class="route__km"><b data-count="6">6</b> km</span><span class="route__time">10 min</span></li>
+              <li class="route"><span class="route__place">Valle de Guadalupe</span><span class="route__km"><b data-count="27">27</b> km</span><span class="route__time">30 min</span></li>
+              <li class="route"><span class="route__place">Tijuana</span><span class="route__km"><b data-count="108">108</b> km</span><span class="route__time">1 h 10 min</span></li>
+              <li class="route"><span class="route__place">Frontera EE. UU. · San Ysidro</span><span class="route__km"><b data-count="125">125</b> km</span><span class="route__time">1 h 30 min</span></li>
+              <li class="route"><span class="route__place">Mexicali</span><span class="route__km"><b data-count="250">250</b> km</span><span class="route__time">3 h</span></li>
             </ol>
             <p class="fine">Tiempos aproximados en auto, sujetos a tráfico y condiciones de ruta.</p>
-            <div class="location__ctas">
-              <a class="btn btn--line" href="https://maps.app.goo.gl/8SuSAerwhwJd1gkg9" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg> Ver punto de venta</a>
-              <button class="btn btn--gold" data-open-form="recorrido">Agendar recorrido</button>
+            <div class="cta-row">
+              <a class="btn btn--line btn--lg" href="https://maps.app.goo.gl/8SuSAerwhwJd1gkg9" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg> Ver punto de venta</a>
+              <button class="btn btn--gold btn--lg" data-open-form="recorrido">Agendar recorrido</button>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 6 · RESIDENCIAS -->
+    <!-- 05 · RESIDENCIAS -->
     <section class="homes section" id="residencias">
       <div class="wrap">
         <div class="section__head section__head--split">
           <div>
-            <p class="eyebrow">Residencias</p>
+            <p class="eyebrow" data-reveal>05 · Residencias</p>
             <h2 class="h2" data-split>Dos prototipos de un nivel,<br><em>los dos con roof garden.</em></h2>
           </div>
-          <p class="lead">Sin escaleras en el día a día: todo en una planta, con patio trasero, estacionamiento y tu terraza privada arriba.</p>
+          <p class="lead" data-reveal>Sin escaleras en el día a día: todo en una planta, con patio trasero, estacionamiento y tu terraza privada arriba.</p>
         </div>
 
         <div class="tabs" role="tablist" aria-label="Prototipos">
@@ -249,10 +269,10 @@
 
         <article class="proto is-active" id="p-2r" role="tabpanel" aria-labelledby="t-2r">
           <div class="proto__media">
-            <figure class="proto__hero"><img src="assets/img/fachada.webp" alt="Fachada del prototipo 2R al atardecer" loading="lazy" width="1600" height="900"></figure>
+            <figure class="frame frame--32 proto__hero"><img src="assets/img/v3/proto2r-render.webp" alt="Render oficial de la calle con casas prototipo 2R" loading="lazy" width="1800" height="1137"></figure>
             <div class="proto__plans">
-              <figure><img src="assets/img/planta-2r.webp" alt="Planta baja del prototipo 2R, 111.53 m²" loading="lazy"></figure>
-              <figure><img src="assets/img/roof-planta-2r.webp" alt="Planta del roof garden del prototipo 2R, 66.53 m²" loading="lazy"></figure>
+              <button class="plan" type="button" data-zoom="assets/img/planta-2r.webp" aria-label="Ampliar planta baja del prototipo 2R"><img src="assets/img/planta-2r.webp" alt="Planta baja del prototipo 2R" loading="lazy"><span>Planta baja · 111.53 m²</span></button>
+              <button class="plan" type="button" data-zoom="assets/img/roof-planta-2r.webp" aria-label="Ampliar planta del roof garden del prototipo 2R"><img src="assets/img/roof-planta-2r.webp" alt="Planta del roof garden del prototipo 2R" loading="lazy"><span>Roof garden · 66.53 m²</span></button>
             </div>
           </div>
           <div class="proto__info">
@@ -260,26 +280,26 @@
             <h3 class="proto__name">2 Recámaras <span>con roof garden</span></h3>
             <p class="proto__price"><small>Desde</small> $3,989,325 <small>MXN</small></p>
             <div class="proto__specs">
-              <div><b>178.06</b><span>m² disfrutables</span></div>
-              <div><b>111.53</b><span>m² construcción</span></div>
-              <div><b>66.53</b><span>m² de roof</span></div>
+              <div><b data-count="178.06" data-decimals="2">178.06</b><span>m² disfrutables</span></div>
+              <div><b data-count="111.53" data-decimals="2">111.53</b><span>m² construcción</span></div>
+              <div><b data-count="66.53" data-decimals="2">66.53</b><span>m² de roof</span></div>
             </div>
             <ul class="checks">
-              <li>2 recámaras con clóset · 2.5 baños</li><li>Sala, comedor y cocina</li><li>Patio trasero y cuarto de lavado</li><li>Área de guardado y clóset de blancos</li><li>Roof con medio baño, barra, tarja y asador</li><li>Terreno desde 180 m² · estacionamiento</li>
+              <li>2 recámaras con clóset · 2.5 baños</li><li>Sala, comedor y cocina</li><li>Patio trasero y cuarto de lavado</li><li>Roof con medio baño, barra, tarja y asador</li><li>Terreno desde 180 m² · estacionamiento</li>
             </ul>
-            <div class="proto__ctas">
-              <button class="btn btn--navy" data-open-form="cotizar-2r" data-interes="2 recámaras">Cotizar el 2R</button>
-              <a class="btn btn--line-dark" data-wa data-wa-origin="proto-2r" href="#" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Preguntar disponibilidad</a>
+            <div class="cta-row">
+              <button class="btn btn--navy btn--lg" data-open-form="cotizar-2r" data-interes="2 recámaras">Cotizar el 2R <svg class="ico ico--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+              <a class="btn btn--line-dark btn--lg" data-wa data-wa-origin="proto-2r" href="#" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Disponibilidad</a>
             </div>
           </div>
         </article>
 
         <article class="proto" id="p-3r" role="tabpanel" aria-labelledby="t-3r" hidden>
           <div class="proto__media">
-            <figure class="proto__hero"><img src="assets/img/fachada-noche.webp" alt="Fachada del prototipo 3R de noche" loading="lazy" width="1600" height="900"></figure>
+            <figure class="frame frame--32 proto__hero"><img src="assets/img/v3/proto3r-render.webp" alt="Render oficial de la calle con casas prototipo 3R y vista al mar" loading="lazy" width="1800" height="1137"></figure>
             <div class="proto__plans">
-              <figure><img src="assets/img/planta-3r.webp" alt="Planta baja del prototipo 3R, 120.44 m²" loading="lazy"></figure>
-              <figure><img src="assets/img/roof-planta-3r.webp" alt="Planta del roof garden del prototipo 3R, 74.75 m²" loading="lazy"></figure>
+              <button class="plan" type="button" data-zoom="assets/img/planta-3r.webp" aria-label="Ampliar planta baja del prototipo 3R"><img src="assets/img/planta-3r.webp" alt="Planta baja del prototipo 3R" loading="lazy"><span>Planta baja · 120.44 m²</span></button>
+              <button class="plan" type="button" data-zoom="assets/img/roof-planta-3r.webp" aria-label="Ampliar planta del roof garden del prototipo 3R"><img src="assets/img/roof-planta-3r.webp" alt="Planta del roof garden del prototipo 3R" loading="lazy"><span>Roof garden · 74.75 m²</span></button>
             </div>
           </div>
           <div class="proto__info">
@@ -287,117 +307,176 @@
             <h3 class="proto__name">3 Recámaras <span>con roof garden</span></h3>
             <p class="proto__price"><small>Desde</small> $4,360,053 <small>MXN</small></p>
             <div class="proto__specs">
-              <div><b>195.19</b><span>m² disfrutables</span></div>
-              <div><b>120.44</b><span>m² construcción</span></div>
-              <div><b>74.75</b><span>m² de roof</span></div>
+              <div><b data-count="195.19" data-decimals="2">195.19</b><span>m² disfrutables</span></div>
+              <div><b data-count="120.44" data-decimals="2">120.44</b><span>m² construcción</span></div>
+              <div><b data-count="74.75" data-decimals="2">74.75</b><span>m² de roof</span></div>
             </div>
             <ul class="checks">
-              <li>3 recámaras con clóset · 2.5 baños</li><li>Sala, comedor y cocina</li><li>Patio trasero y cuarto de lavado</li><li>Área de guardado y clóset de blancos</li><li>Roof con medio baño, barra, tarja y asador</li><li>Terreno desde 180 m² · estacionamiento</li>
+              <li>3 recámaras con clóset · 2.5 baños</li><li>Sala, comedor y cocina</li><li>Patio trasero y cuarto de lavado</li><li>Roof con medio baño, barra, tarja y asador</li><li>Terreno desde 180 m² · estacionamiento</li>
             </ul>
-            <div class="proto__ctas">
-              <button class="btn btn--navy" data-open-form="cotizar-3r" data-interes="3 recámaras">Cotizar el 3R</button>
-              <a class="btn btn--line-dark" data-wa data-wa-origin="proto-3r" href="#" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Preguntar disponibilidad</a>
+            <div class="cta-row">
+              <button class="btn btn--navy btn--lg" data-open-form="cotizar-3r" data-interes="3 recámaras">Cotizar el 3R <svg class="ico ico--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+              <a class="btn btn--line-dark btn--lg" data-wa data-wa-origin="proto-3r" href="#" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Disponibilidad</a>
             </div>
           </div>
         </article>
       </div>
     </section>
 
-    <!-- 7 · EXPERIENCIA (mosaico, sin carrusel) -->
-    <section class="life section section--dark" id="vida">
+    <!-- 06 · POR DENTRO (un espacio a la vez) -->
+    <section class="inside section section--sand" id="interior">
       <div class="wrap">
         <div class="section__head section__head--split">
           <div>
-            <p class="eyebrow eyebrow--gold">La experiencia Punta Pacífico</p>
-            <h2 class="h2" data-split>Un día cualquiera<br><em>se siente a vacaciones.</em></h2>
+            <p class="eyebrow" data-reveal>06 · Por dentro</p>
+            <h2 class="h2" data-split>Recorre tu casa,<br><em>espacio por espacio.</em></h2>
           </div>
-          <p class="lead">Café frente al mar, alberca y pickleball a pasos de tu casa, y cenas bajo la pérgola de tu propio roof.</p>
+          <p class="lead" data-reveal>Elige un espacio para verlo. Diseño funcional, luz natural y acabados listos para habitarse.</p>
         </div>
-        <div class="bento">
-          <figure class="tile t1"><video muted loop playsinline preload="none" poster="assets/video/pareja-mar.jpg" data-lazy-video aria-label="Pareja disfrutando la vista al mar"><source data-src="assets/video/pareja-mar.mp4" type="video/mp4"></video></figure>
-          <figure class="tile t2"><img src="assets/img/p/pareja-atardecer.webp" alt="Pareja viendo el atardecer desde su terraza" loading="lazy"></figure>
-          <figure class="tile t3"><img src="assets/img/p/alberca-amigos.webp" alt="Amigos en la alberca del clúster" loading="lazy"></figure>
-          <figure class="tile t4"><video muted loop playsinline preload="none" poster="assets/video/roofcena.jpg" data-lazy-video aria-label="Cena con amigos en el roof garden"><source data-src="assets/video/roofcena.mp4" type="video/mp4"></video></figure>
-          <figure class="tile t5"><img src="assets/img/p/roof-familia.webp" alt="Familia en el roof garden" loading="lazy"></figure>
-          <figure class="tile t6"><video muted loop playsinline preload="none" poster="assets/video/pickleball.jpg" data-lazy-video aria-label="Partido de pickleball en el clúster"><source data-src="assets/video/pickleball.mp4" type="video/mp4"></video></figure>
-          <figure class="tile t7"><img src="assets/img/p/recamara-luz.webp" alt="Recámara principal con luz natural" loading="lazy"></figure>
-          <figure class="tile t8"><video muted loop playsinline preload="none" poster="assets/video/asador.jpg" data-lazy-video aria-label="Asador en el roof"><source data-src="assets/video/asador.mp4" type="video/mp4"></video></figure>
-        </div>
-        <div class="life__cta">
-          <button class="btn btn--gold btn--lg" data-open-form="visita">Agendar mi visita</button>
-          <a class="btn btn--line btn--lg" data-wa data-wa-origin="experiencia" href="#" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Hablar con Fran</a>
+        <div class="explore explore--wide" data-explore>
+          <div class="explore__stage frame frame--32" data-reveal="clip">
+            <img class="explore__fig is-on" src="assets/img/v3/in-sala.webp" alt="Sala-comedor con cocina integrada" loading="lazy" width="1500" height="1000">
+            <img class="explore__fig" src="assets/img/v3/in-cocina.webp" alt="Cocina con barra de granito" loading="lazy" width="1500" height="1000">
+            <img class="explore__fig" src="assets/img/v3/in-recamara-principal.webp" alt="Recámara principal con clóset" loading="lazy" width="1500" height="1000">
+            <img class="explore__fig" src="assets/img/v3/in-recamara.webp" alt="Recámara secundaria con clóset" loading="lazy" width="1500" height="1000">
+            <img class="explore__fig" src="assets/img/v3/in-bano.webp" alt="Baño con cancel de cristal templado" loading="lazy" width="1500" height="1000">
+            <img class="explore__fig" src="assets/img/v3/in-patio.webp" alt="Patio trasero privado" loading="lazy" width="1500" height="1000">
+          </div>
+          <div class="explore__list" role="tablist" aria-label="Espacios de la casa">
+            <button role="tab" aria-selected="true" class="is-on" data-desc="Espacio abierto e iluminado, conectado con la cocina."><span class="explore__n">01</span><span class="explore__name">Sala-comedor</span><span class="explore__desc">Espacio abierto e iluminado, conectado con la cocina.</span></button>
+            <button role="tab" aria-selected="false" tabindex="-1" data-desc="Barra de granito, estufa con horno y campana desde la entrega."><span class="explore__n">02</span><span class="explore__name">Cocina</span><span class="explore__desc">Barra de granito, estufa con horno y campana desde la entrega.</span></button>
+            <button role="tab" aria-selected="false" tabindex="-1" data-desc="Clóset incluido y minisplit para cada temporada."><span class="explore__n">03</span><span class="explore__name">Recámara principal</span><span class="explore__desc">Clóset incluido y minisplit para cada temporada.</span></button>
+            <button role="tab" aria-selected="false" tabindex="-1" data-desc="Clóset y minisplit también en la segunda recámara."><span class="explore__n">04</span><span class="explore__name">Recámara</span><span class="explore__desc">Clóset y minisplit también en la segunda recámara.</span></button>
+            <button role="tab" aria-selected="false" tabindex="-1" data-desc="Cancel de cristal templado y acabados en tonos naturales."><span class="explore__n">05</span><span class="explore__name">Baño</span><span class="explore__desc">Cancel de cristal templado y acabados en tonos naturales.</span></button>
+            <button role="tab" aria-selected="false" tabindex="-1" data-desc="Tu espacio exterior privado en planta baja."><span class="explore__n">06</span><span class="explore__name">Patio trasero</span><span class="explore__desc">Tu espacio exterior privado en planta baja.</span></button>
+          </div>
+          <p class="explore__now" aria-live="polite">Espacio abierto e iluminado, conectado con la cocina.</p>
         </div>
       </div>
     </section>
 
-    <!-- 8 · EQUIPAMIENTO -->
+    <!-- 07 · EQUIPAMIENTO -->
     <section class="equip section" id="equipamiento">
       <div class="wrap equip__grid">
         <div class="equip__copy">
-          <p class="eyebrow">Equipamiento incluido</p>
-          <h2 class="h2" data-split>Tu casa, lista desde el día uno<br><em>y controlada desde tu celular.</em></h2>
-          <div class="equip__save"><b>Hasta $450,000</b><span>en equipamiento incluido en el precio</span></div>
+          <p class="eyebrow" data-reveal>07 · Equipamiento incluido</p>
+          <h2 class="h2" data-split>Lista desde el día uno<br><em>y controlada desde tu celular.</em></h2>
+          <div class="equip__save" data-reveal><span>Hasta</span><b>$<span data-count="450000" data-sep>450,000</span></b><span>en equipamiento incluido en el precio</span></div>
           <div class="equip__cols">
-            <div>
+            <div data-reveal>
               <h3 class="h4">Interior</h3>
               <ul class="checks checks--sm">
                 <li>Cocina con barra de granito, estufa con horno y campana</li>
                 <li>Clósets en recámaras</li>
                 <li>Minisplit en recámaras y sala-comedor</li>
                 <li>Baños con cancel de cristal templado</li>
-                <li>Roof: medio baño, barra con tarja, asador y pérgola</li>
               </ul>
             </div>
-            <div>
+            <div data-reveal style="--d:.12s">
               <h3 class="h4">Smart home</h3>
               <ul class="checks checks--sm">
                 <li>Cerradura digital</li>
                 <li>Aire acondicionado desde la app</li>
-                <li>Conectividad inalámbrica</li>
                 <li>Encendido y apagado de luces</li>
-                <li>Panel de control</li>
+                <li>Conectividad inalámbrica y panel de control</li>
               </ul>
             </div>
           </div>
         </div>
         <div class="equip__media">
-          <figure class="phone"><video muted loop playsinline preload="none" poster="assets/video/celular.jpg" data-lazy-video aria-label="Control de la casa desde el celular"><source data-src="assets/video/celular.mp4" type="video/mp4"></video></figure>
-          <figure class="phone phone--b"><video muted loop playsinline preload="none" poster="assets/video/cerradura.jpg" data-lazy-video aria-label="Cerradura digital"><source data-src="assets/video/cerradura.mp4" type="video/mp4"></video></figure>
+          <figure class="phone" data-reveal><video muted loop playsinline preload="none" poster="assets/video/celular.jpg" data-lazy-video aria-label="Control de luces y clima desde el celular"><source data-src="assets/video/celular.mp4" type="video/mp4"></video></figure>
+          <figure class="phone phone--b" data-reveal style="--d:.15s"><video muted loop playsinline preload="none" poster="assets/video/cerradura.jpg" data-lazy-video aria-label="Apertura con cerradura digital"><source data-src="assets/video/cerradura.mp4" type="video/mp4"></video></figure>
         </div>
-      </div>
-      <div class="wrap gallery">
-        <figure class="g g--a"><img src="assets/img/sala-real.webp" alt="Sala-comedor" loading="lazy"></figure>
-        <figure class="g g--b"><img src="assets/img/cocina.webp" alt="Cocina equipada con barra de granito" loading="lazy"></figure>
-        <figure class="g g--c"><img src="assets/img/recamara-principal.webp" alt="Recámara secundaria con clóset" loading="lazy"></figure>
-        <figure class="g g--d"><img src="assets/img/bano.webp" alt="Baño con cancel de cristal templado" loading="lazy"></figure>
-        <figure class="g g--e"><img src="assets/img/roof-atardecer.webp" alt="Roof garden al atardecer" loading="lazy"></figure>
-        <figure class="g g--f"><img src="assets/img/patio-noche.webp" alt="Patio trasero de noche" loading="lazy"></figure>
       </div>
     </section>
 
-    <!-- 9 · AMENIDADES (fotos y videos reales) -->
+    <!-- 08 · ROOF GARDEN (pantalla completa) -->
+    <section class="roof" id="roof">
+      <div class="roof__bg" aria-hidden="true">
+        <img class="roof__img" src="assets/img/roof-atardecer.webp" alt="" loading="lazy" width="1254" height="1254" data-parallax>
+        <video class="roof__video" muted loop playsinline preload="none" poster="assets/video/v3/roof-sol.jpg" data-lazy-video><source data-src="assets/video/v3/roof-sol.mp4" type="video/mp4"></video>
+      </div>
+      <div class="wrap roof__inner"><div class="roof__content">
+        <p class="eyebrow eyebrow--gold" data-reveal>08 · Roof garden</p>
+        <h2 class="h2 roof__title" data-split>Tu terraza privada,<br><em>con el Pacífico de fondo.</em></h2>
+        <ul class="roof__feats" data-stagger>
+          <li><b data-count="66.53" data-decimals="2">66.53</b><span>m² de roof en el 2R</span></li>
+          <li><b data-count="74.75" data-decimals="2">74.75</b><span>m² de roof en el 3R</span></li>
+        </ul>
+        <ul class="roof__list" data-stagger>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-drop"/></svg>Medio baño</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-sink"/></svg>Barra con tarja</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-fire"/></svg>Asador</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-pergola"/></svg>Pérgola</li>
+        </ul>
+        <div class="cta-row" data-reveal>
+          <button class="btn btn--gold btn--lg magnetic" data-open-form="visita">Quiero conocer el roof <svg class="ico ico--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- 09 · UN DÍA AQUÍ (historia al hacer scroll) -->
+    <section class="day" id="dia" data-day>
+      <div class="wrap day__head">
+        <p class="eyebrow eyebrow--gold" data-reveal>09 · Un día en Punta Pacífico</p>
+        <h2 class="h2" data-split>Un día cualquiera<br><em>se siente a vacaciones.</em></h2>
+        <p class="lead" data-reveal>Sigue bajando y vive un día aquí, de la mañana a la noche.</p>
+      </div>
+      <div class="day__body">
+        <div class="day__stage">
+          <div class="day__frame">
+            <video class="day__video is-on" muted loop playsinline preload="none" poster="assets/video/v3/d1-mar.jpg" aria-label="Pareja con vista al mar desde su terraza"><source data-src="assets/video/v3/d1-mar.mp4" type="video/mp4"></video>
+            <video class="day__video" muted loop playsinline preload="none" poster="assets/video/v3/d2-alberca.jpg" aria-label="Pareja en la alberca del clúster"><source data-src="assets/video/v3/d2-alberca.mp4" type="video/mp4"></video>
+            <video class="day__video" muted loop playsinline preload="none" poster="assets/video/v3/d3-pickleball.jpg" aria-label="Partido de pickleball en el clúster"><source data-src="assets/video/v3/d3-pickleball.mp4" type="video/mp4"></video>
+            <video class="day__video" muted loop playsinline preload="none" poster="assets/video/v3/d4-asador.jpg" aria-label="Asador en el roof garden"><source data-src="assets/video/v3/d4-asador.mp4" type="video/mp4"></video>
+            <video class="day__video" muted loop playsinline preload="none" poster="assets/video/v3/d5-cena.jpg" aria-label="Cena con amigos bajo la pérgola"><source data-src="assets/video/v3/d5-cena.mp4" type="video/mp4"></video>
+            <div class="day__bars" aria-hidden="true"><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span></div>
+          </div>
+        </div>
+        <ol class="day__steps">
+          <li class="day__step is-on" data-time="07:00"><div class="day__card"><span class="day__time">07:00</span><h3>Café con vista al mar</h3><p>Empiezas el día en tu terraza, con el Pacífico enfrente.</p></div></li>
+          <li class="day__step" data-time="11:30"><div class="day__card"><span class="day__time">11:30</span><h3>La alberca, a pasos de casa</h3><p>Sin manejar ni salir del clúster: la alberca es parte de tus amenidades.</p></div></li>
+          <li class="day__step" data-time="17:00"><div class="day__card"><span class="day__time">17:00</span><h3>Pickleball con amigos</h3><p>Cancha propia dentro del clúster para jugar con vecinos.</p></div></li>
+          <li class="day__step" data-time="19:30"><div class="day__card"><span class="day__time">19:30</span><h3>Asador en tu roof</h3><p>Barra con tarja y asador listos, arriba de tu casa.</p></div></li>
+          <li class="day__step" data-time="21:00"><div class="day__card"><span class="day__time">21:00</span><h3>Cena bajo la pérgola</h3><p>Así termina un día cualquiera en Punta Pacífico.</p><button class="btn btn--gold btn--lg" data-open-form="visita">Quiero vivirlo <svg class="ico ico--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 10 · AMENIDADES (una a la vez) -->
     <section class="amen section section--sand" id="amenidades">
       <div class="wrap">
         <div class="section__head section__head--split">
           <div>
-            <p class="eyebrow">Amenidades</p>
+            <p class="eyebrow" data-reveal>10 · Amenidades</p>
             <h2 class="h2" data-split>Alberca, pickleball y asadores<br><em>a pasos de tu puerta.</em></h2>
           </div>
-          <p class="lead">Doce amenidades dentro del clúster y cuatro más en el desarrollo, pensadas para usarse todos los días y sumar plusvalía.</p>
+          <p class="lead" data-reveal>Doce amenidades dentro del clúster y cuatro más en el desarrollo, pensadas para usarse todos los días.</p>
         </div>
-        <div class="amen__media">
-          <figure class="am am--1"><video muted loop playsinline preload="none" poster="assets/video/alberca.jpg" data-lazy-video aria-label="Alberca del clúster"><source data-src="assets/video/alberca.mp4" type="video/mp4"></video></figure>
-          <figure class="am am--2"><img src="assets/img/p/amenidades-paseo.webp" alt="Andador junto a la cancha de pickleball y la alberca" loading="lazy"></figure>
-          <figure class="am am--3"><img src="assets/img/p/asadores.webp" alt="Área de asadores con vista al mar" loading="lazy"></figure>
-          <figure class="am am--4"><img src="assets/img/p/pickleball-2.webp" alt="Cancha de pickleball" loading="lazy"></figure>
-          <figure class="am am--5"><img src="assets/img/p/salon.webp" alt="Salón de usos múltiples" loading="lazy"></figure>
+        <div class="explore explore--tall" data-explore>
+          <div class="explore__list" role="tablist" aria-label="Amenidades">
+            <button role="tab" aria-selected="true" class="is-on" data-desc="Para refrescarte sin salir del clúster."><svg class="ico" aria-hidden="true"><use href="#i-pool"/></svg><span class="explore__name">Alberca</span><span class="explore__desc">Para refrescarte sin salir del clúster.</span></button>
+            <button role="tab" aria-selected="false" tabindex="-1" data-desc="Cancha propia para jugar con vecinos y amigos."><svg class="ico" aria-hidden="true"><use href="#i-paddle"/></svg><span class="explore__name">Pickleball</span><span class="explore__desc">Cancha propia para jugar con vecinos y amigos.</span></button>
+            <button role="tab" aria-selected="false" tabindex="-1" data-desc="Asadores y mesas al aire libre para reuniones."><svg class="ico" aria-hidden="true"><use href="#i-fire"/></svg><span class="explore__name">Asadores</span><span class="explore__desc">Asadores y mesas al aire libre para reuniones.</span></button>
+            <button role="tab" aria-selected="false" tabindex="-1" data-desc="Salón de usos múltiples bajo la pérgola."><svg class="ico" aria-hidden="true"><use href="#i-sofa"/></svg><span class="explore__name">Salón</span><span class="explore__desc">Salón de usos múltiples bajo la pérgola.</span></button>
+            <button role="tab" aria-selected="false" tabindex="-1" data-desc="Parque lineal y andadores para caminar."><svg class="ico" aria-hidden="true"><use href="#i-tree"/></svg><span class="explore__name">Andadores</span><span class="explore__desc">Parque lineal y andadores para caminar.</span></button>
+          </div>
+          <div class="explore__stage frame frame--45" data-reveal="clip">
+            <img class="explore__fig is-on" src="assets/img/v3/am-alberca.webp" alt="Amigos en la alberca del clúster" loading="lazy" width="760" height="950">
+            <img class="explore__fig" src="assets/img/v3/am-pickleball.webp" alt="Partido en la cancha de pickleball" loading="lazy" width="760" height="950">
+            <img class="explore__fig" src="assets/img/v3/am-asadores.webp" alt="Familia en el área de asadores" loading="lazy" width="760" height="950">
+            <img class="explore__fig" src="assets/img/v3/am-salon.webp" alt="Amigos en el salón de usos múltiples" loading="lazy" width="760" height="950">
+            <img class="explore__fig" src="assets/img/v3/am-andadores.webp" alt="Pareja caminando por los andadores" loading="lazy" width="760" height="950">
+          </div>
+          <p class="explore__now" aria-live="polite">Para refrescarte sin salir del clúster.</p>
         </div>
-        <div class="amen__grid">
-          <div class="amen__col">
+
+        <div class="amen__all">
+          <div>
             <h3 class="pill">Dentro del clúster</h3>
-            <ul class="amen__list">
+            <ul class="chips-list" data-stagger>
               <li><svg class="ico" aria-hidden="true"><use href="#i-pool"/></svg>Alberca</li>
-              <li><svg class="ico" aria-hidden="true"><use href="#i-paddle"/></svg>Cancha de pickleball</li>
+              <li><svg class="ico" aria-hidden="true"><use href="#i-paddle"/></svg>Pickleball</li>
               <li><svg class="ico" aria-hidden="true"><use href="#i-fire"/></svg>Fogatero</li>
               <li><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>Pet zone</li>
               <li><svg class="ico" aria-hidden="true"><use href="#i-tree"/></svg>Parque lineal</li>
@@ -410,9 +489,9 @@
               <li><svg class="ico" aria-hidden="true"><use href="#i-drop"/></svg>Baños</li>
             </ul>
           </div>
-          <div class="amen__col">
+          <div>
             <h3 class="pill">En el desarrollo</h3>
-            <ul class="amen__list amen__list--big">
+            <ul class="chips-list" data-stagger>
               <li><svg class="ico" aria-hidden="true"><use href="#i-path"/></svg>Senderos</li>
               <li><svg class="ico" aria-hidden="true"><use href="#i-bike"/></svg>Ciclovías</li>
               <li><svg class="ico" aria-hidden="true"><use href="#i-bench"/></svg>Zonas de descanso</li>
@@ -423,23 +502,23 @@
       </div>
     </section>
 
-    <!-- 10 · PLUSVALIA (datos del video Doctor V13) -->
+    <!-- 11 · PLUSVALIA (datos del video Doctor V13) -->
     <section class="value section section--dark" id="plusvalia">
       <div class="wrap">
         <div class="section__head section__head--split">
           <div>
-            <p class="eyebrow eyebrow--gold">Plusvalía proyectada · misma propiedad</p>
+            <p class="eyebrow eyebrow--gold" data-reveal>11 · Plusvalía proyectada</p>
             <h2 class="h2" data-split>De $4.57 M hoy<br><em>a hasta $9.80 M en 2034.</em></h2>
           </div>
-          <p class="lead">Valor estimado del inmueble con una apreciación anual compuesta conservadora (8%) y optimista (10%), sobre el precio base del modelo de renta.</p>
+          <p class="lead" data-reveal>Valor estimado de la misma propiedad con una apreciación anual compuesta conservadora (8%) y optimista (10%).</p>
         </div>
 
-        <div class="value__panel">
-          <div class="value__kpis">
-            <div class="kpi"><span>Hoy · precio base</span><b>$4.57 M</b><em>$4,570,545 MXN</em></div>
-            <div class="kpi"><span>A la entrega 2028</span><b>$5.37 – $5.57 M</b><em>+$794,839 a +$1,003,914</em></div>
-            <div class="kpi"><span>2031</span><b>$6.72 – $7.36 M</b><em>conservador · optimista</em></div>
-            <div class="kpi"><span>2034</span><b>$8.46 – $9.80 M</b><em>conservador · optimista</em></div>
+        <div class="value__panel" data-reveal>
+          <div class="value__kpis" data-stagger>
+            <div class="kpi"><span>Hoy · precio base</span><b>$<span data-count="4.57" data-decimals="2">4.57</span> M</b><em>$4,570,545 MXN</em></div>
+            <div class="kpi"><span>A la entrega 2028</span><b>$<span data-count="5.37" data-decimals="2">5.37</span> – $<span data-count="5.57" data-decimals="2">5.57</span> M</b><em>+$794,839 a +$1,003,914</em></div>
+            <div class="kpi"><span>2031</span><b>$<span data-count="6.72" data-decimals="2">6.72</span> – $<span data-count="7.36" data-decimals="2">7.36</span> M</b><em>conservador · optimista</em></div>
+            <div class="kpi"><span>2034</span><b>$<span data-count="8.46" data-decimals="2">8.46</span> – $<span data-count="9.80" data-decimals="2">9.80</span> M</b><em>conservador · optimista</em></div>
           </div>
           <div class="chart" data-chart>
             <svg viewBox="0 0 800 360" preserveAspectRatio="none" role="img" aria-label="Gráfica: el valor estimado pasa de 4.57 millones hoy a 5.37 a 5.57 millones a la entrega, 6.72 a 7.36 millones en 2031 y 8.46 a 9.80 millones en 2034">
@@ -455,97 +534,93 @@
           <p class="fine">Precio base del modelo de renta: $4,570,545 MXN. Proyección ilustrativa de valor, no flujo de rentas ni garantía. Cálculo: $4,570,545 × (1 + tasa anual)^(meses/12).</p>
           <div class="value__cta">
             <p>¿Quieres los números con renta de estancia corta incluida?</p>
-            <button class="btn btn--gold" data-gate="roi"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg> Pedir el análisis de rentabilidad</button>
+            <button class="btn btn--gold btn--lg" data-gate="roi"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg> Pedir el análisis de rentabilidad</button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 11 · PAGOS / PUENTE FINANCIERO -->
+    <!-- 12 · PAGOS -->
     <section class="pay section" id="pagos">
       <div class="wrap">
         <div class="section__head section__head--split">
           <div>
-            <p class="eyebrow">El puente financiero</p>
+            <p class="eyebrow" data-reveal>12 · El puente financiero</p>
             <h2 class="h2" data-split>Paga mientras se construye,<br><em>liquida al recibir.</em></h2>
           </div>
-          <p class="lead">10% de enganche a la firma, 10% en 20 mensualidades durante la construcción y el 80% contra entrega a mediados de 2028, con crédito hipotecario o recursos propios.</p>
+          <p class="lead" data-reveal>10% de enganche a la firma, 10% en 20 mensualidades durante la construcción y el 80% contra entrega a mediados de 2028, con crédito hipotecario o recursos propios.</p>
         </div>
 
-        <div class="tabs tabs--light" role="tablist" aria-label="Esquemas de pago">
-          <button class="tab is-active" role="tab" aria-selected="true" aria-controls="pay-a" id="tp-a"><span class="t-long">10% · 10% en 20 meses · 80% entrega</span><span class="t-short">10 · 10 · 80</span></button>
-          <button class="tab" role="tab" aria-selected="false" aria-controls="pay-b" id="tp-b" tabindex="-1"><span class="t-long">Contado diferido · 5% de descuento</span><span class="t-short">Contado · 5% desc.</span></button>
-          <span class="tabs__ink" aria-hidden="true"></span>
+        <div class="pay__bar">
+          <div class="tabs tabs--light" role="tablist" aria-label="Esquemas de pago">
+            <button class="tab is-active" role="tab" aria-selected="true" aria-controls="pay-a" id="tp-a"><span class="t-long">10 · 10 · 80 contra entrega</span><span class="t-short">10 · 10 · 80</span></button>
+            <button class="tab" role="tab" aria-selected="false" aria-controls="pay-b" id="tp-b" tabindex="-1"><span class="t-long">Contado diferido · 5% desc.</span><span class="t-short">Contado · 5%</span></button>
+            <span class="tabs__ink" aria-hidden="true"></span>
+          </div>
+          <div class="seg" role="radiogroup" aria-label="Prototipo para calcular">
+            <span class="seg__label">Calcular para</span>
+            <button type="button" role="radio" aria-checked="true" class="is-on" data-price="3989325">2R</button>
+            <button type="button" role="radio" aria-checked="false" data-price="4360053">3R</button>
+          </div>
         </div>
 
         <div class="paypanel is-active" id="pay-a" role="tabpanel" aria-labelledby="tp-a">
           <div class="bridge" data-bridge>
-            <div class="bridge__step bridge__step--start"><small>Hoy</small><b>10%</b><span>Enganche a la firma</span></div>
+            <div class="bridge__step bridge__step--start"><small>Hoy · a la firma</small><b>10%</b><span class="bridge__amt">$<span data-pay="eng">398,932</span></span><span>de enganche</span></div>
             <div class="bridge__span">
-              <small>Construcción</small>
+              <small>Durante la construcción</small>
               <b>10%</b>
-              <span>Diferido en 20 mensualidades</span>
+              <span class="bridge__amt">20 × $<span data-pay="mes">19,947</span></span>
               <svg class="bridge__arc" viewBox="0 0 400 110" preserveAspectRatio="none" aria-hidden="true"><path d="M0 100 C 110 100, 150 30, 200 30 S 300 100, 400 8"/></svg>
               <div class="bridge__ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-              <em class="bridge__months">20 meses</em>
+              <em class="bridge__months">20 mensualidades</em>
             </div>
-            <div class="bridge__step bridge__step--end"><small>Entrega · mediados de 2028</small><b>80%</b><span>Contra entrega</span></div>
+            <div class="bridge__step bridge__step--end"><small>Entrega · mediados de 2028</small><b>80%</b><span class="bridge__amt">$<span data-pay="ent">3,191,460</span></span><span>contra entrega</span></div>
           </div>
-          <div class="table-wrap">
-            <table class="ptable">
-              <thead><tr><th>Prototipo</th><th>Precio</th><th>10% enganche</th><th>10% diferido <small>20 mensualidades de</small></th><th>80% contra entrega</th></tr></thead>
-              <tbody>
-                <tr><td data-l="Prototipo">2R</td><td data-l="Precio">$3,989,325</td><td data-l="10% enganche">$398,932</td><td data-l="20 mensualidades de">$19,947</td><td data-l="80% contra entrega">$3,191,460</td></tr>
-                <tr><td data-l="Prototipo">3R</td><td data-l="Precio">$4,360,053</td><td data-l="10% enganche">$436,005</td><td data-l="20 mensualidades de">$21,800</td><td data-l="80% contra entrega">$3,488,042</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="fine">Mensualidades redondeadas al peso. El 80% puede cubrirse con crédito hipotecario, recursos propios o ambos.</p>
+          <p class="fine">Montos calculados sobre el precio de lista del prototipo elegido y redondeados al peso. El 80% puede cubrirse con crédito hipotecario, recursos propios o ambos.</p>
         </div>
 
         <div class="paypanel" id="pay-b" role="tabpanel" aria-labelledby="tp-b" hidden>
           <div class="cash">
-            <div class="cash__item"><b>40%</b><span>de enganche</span></div>
-            <div class="cash__item"><b>40%</b><span>diferido durante la obra</span></div>
-            <div class="cash__item"><b>20%</b><span>contra entrega</span></div>
-            <div class="cash__item cash__item--gold"><b>5%</b><span>de descuento sobre precio de lista</span></div>
+            <div class="cash__item cash__item--gold"><b>5%</b><span>de descuento</span><em>$<span data-cash="final">3,789,859</span> precio final</em></div>
+            <div class="cash__item"><b>40%</b><span>de enganche</span><em>$<span data-cash="eng">1,515,944</span></em></div>
+            <div class="cash__item"><b>40%</b><span>a 19 meses</span><em>19 × $<span data-cash="mes">79,786</span></em></div>
+            <div class="cash__item"><b>20%</b><span>a la firma de escritura</span><em>$<span data-cash="esc">757,972</span></em></div>
           </div>
-          <div class="table-wrap">
-            <table class="ptable">
-              <thead><tr><th>Prototipo</th><th>Precio con 5% desc.</th><th>40% enganche</th><th>40% diferido</th><th>20% contra entrega</th></tr></thead>
-              <tbody>
-                <tr><td data-l="Prototipo">2R</td><td data-l="Precio c/desc.">$3,789,859</td><td data-l="40% enganche">$1,515,944</td><td data-l="40% diferido">$1,515,944</td><td data-l="20% entrega">$757,972</td></tr>
-                <tr><td data-l="Prototipo">3R</td><td data-l="Precio c/desc.">$4,142,050</td><td data-l="40% enganche">$1,656,820</td><td data-l="40% diferido">$1,656,820</td><td data-l="20% entrega">$828,410</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="fine">Promoción de noviembre 2026. Montos estimados sobre precio de lista con 5% de descuento; pueden variar según la unidad.</p>
+          <p class="fine">Promoción de noviembre 2026 sobre precio de lista. Montos estimados; pueden variar según la unidad.</p>
         </div>
 
-        <div class="pay__cta">
-          <button class="btn btn--navy btn--lg" data-open-form="apartar" data-interes="">Quiero apartar mi casa</button>
-          <a class="btn btn--line-dark btn--lg" data-wa data-wa-origin="pagos" href="#" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Resolver dudas por WhatsApp</a>
+        <div class="pay__fran" data-reveal>
+          <figure class="frame pay__avatar"><img src="assets/img/v3/fran-avatar.webp" alt="Fran Morishita" loading="lazy" width="240" height="240"></figure>
+          <div class="pay__say">
+            <p class="pay__quote">“Te armo la corrida exacta con la unidad, el plazo y el crédito que te convengan.”</p>
+            <p class="pay__sig">Fran Morishita · Asesor de ventas</p>
+          </div>
+          <div class="cta-row">
+            <button class="btn btn--navy btn--lg magnetic" data-open-form="apartar">Quiero apartar mi casa <svg class="ico ico--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+            <a class="btn btn--wa btn--lg" data-wa data-wa-origin="pagos" href="#" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Dudas por WhatsApp</a>
+          </div>
         </div>
         <p class="fine center">Precios, enganche y mensualidades sujetos a cambio sin previo aviso. Esquema válido únicamente con firma de contrato. Aplican restricciones.</p>
       </div>
     </section>
 
-    <!-- 12 · MATERIAL BLOQUEADO -->
+    <!-- 13 · MATERIAL BLOQUEADO -->
     <section class="locked section section--sand" id="material">
       <div class="wrap">
         <div class="section__head">
-          <p class="eyebrow">Material exclusivo</p>
+          <p class="eyebrow" data-reveal>13 · Material exclusivo</p>
           <h2 class="h2" data-split>Brochure y análisis de rentabilidad,<br><em>te los mando por WhatsApp.</em></h2>
         </div>
 
         <div class="locked__grid">
           <div class="locked__left">
             <div class="seg seg--light" role="tablist" aria-label="Material">
-              <button role="tab" aria-selected="true" class="is-on" data-doc="roi">Análisis de rentabilidad</button>
-              <button role="tab" aria-selected="false" data-doc="brochure">Brochure noviembre 2026</button>
+              <button type="button" role="tab" aria-selected="true" class="is-on" data-doc="roi">Análisis de rentabilidad</button>
+              <button type="button" role="tab" aria-selected="false" data-doc="brochure">Brochure noviembre 2026</button>
             </div>
 
-            <article class="doc is-on" data-doc-card="roi">
+            <article class="doc is-on" data-doc-card="roi" data-reveal>
               <header class="doc__head">
                 <img src="assets/brand/logo-color.png" alt="Punta Pacífico" width="120" height="58">
                 <span class="doc__tag"><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg> PDF</span>
@@ -584,6 +659,7 @@
           </div>
 
           <form class="form card locked__form" data-lead-form="gate" data-material="roi" novalidate>
+            <div class="locked__badge" aria-hidden="true"><svg class="ico"><use href="#i-lock"/></svg></div>
             <h3 class="form__title">Recíbelo por WhatsApp</h3>
             <p class="form__sub">Fran te lo envía en PDF y resuelve tus dudas sobre los números.</p>
             <div class="field"><label for="g-nombre">Nombre completo</label><input id="g-nombre" name="nombre" autocomplete="name" required placeholder="Tu nombre"><small class="err" data-err="nombre"></small></div>
@@ -594,7 +670,7 @@
             </div>
             <div class="field"><label for="g-email">Correo electrónico</label><input id="g-email" name="email" type="email" autocomplete="email" required placeholder="tu@correo.com"><small class="err" data-err="email"></small></div>
             <input type="text" name="_honey" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <button class="btn btn--navy btn--lg btn--block" type="submit"><span data-gate-btn>Enviarme el análisis</span><svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+            <button class="btn btn--navy btn--lg btn--block" type="submit"><span data-gate-btn>Enviarme el análisis</span><svg class="ico ico--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
             <p class="form__legal">Al enviar se abre WhatsApp con tu solicitud para Fran. Tus datos solo se usan para darte seguimiento.</p>
             <p class="form__status" role="status" aria-live="polite"></p>
           </form>
@@ -602,31 +678,31 @@
       </div>
     </section>
 
-    <!-- 13 · CONTACTO (formulario completo) -->
+    <!-- 14 · CONTACTO -->
     <section class="contact section" id="contacto">
       <div class="wrap contact__grid">
         <div class="contact__copy">
-          <p class="eyebrow">Contacto</p>
+          <p class="eyebrow" data-reveal>14 · Contacto</p>
           <h2 class="h2" data-split>Cuéntame qué buscas<br>y te preparo <em>tu propuesta.</em></h2>
-          <p class="lead">Con estas respuestas te comparto unidades disponibles, la corrida de pagos que te conviene y el mejor momento para visitarnos.</p>
-          <figure class="contact__img"><img src="assets/img/p/fran-entrada.webp" alt="Fran recibiendo a una pareja en la entrada de una casa" loading="lazy"></figure>
+          <p class="lead" data-reveal>Con tus respuestas te comparto unidades disponibles, la corrida de pagos que te conviene y el mejor momento para visitarnos.</p>
+          <figure class="frame frame--45 contact__img" data-reveal="clip"><img src="assets/img/v3/fran-entrada.webp" alt="Fran recibiendo a una pareja en la entrada de una casa" loading="lazy" width="760" height="950"></figure>
         </div>
         <div class="card" data-form-host="main"></div>
       </div>
     </section>
 
-    <!-- 14 · FAQ -->
+    <!-- FAQ -->
     <section class="faq section section--sand" id="faq">
       <div class="wrap faq__grid">
         <div>
-          <p class="eyebrow">Preguntas frecuentes</p>
-          <h2 class="h2">Lo que más<br><em>me preguntan.</em></h2>
-          <div class="dev">
+          <p class="eyebrow" data-reveal>Preguntas frecuentes</p>
+          <h2 class="h2" data-split>Lo que más<br><em>me preguntan.</em></h2>
+          <div class="dev" data-reveal>
             <p class="eyebrow">El desarrollador</p>
             <p><b>SiSol Soluciones Inmobiliarias</b> tiene más de 25 años en el mercado inmobiliario en México: diseña, administra, construye y comercializa desarrollos vacacionales, habitacionales y de inversión, con más de 30 proyectos concluidos en 10 estados. Punta Pacífico cuenta con el respaldo de <b>INVEX</b>.</p>
           </div>
         </div>
-        <div class="acc">
+        <div class="acc" data-stagger>
           <details><summary>¿Cuándo se entregan las casas?</summary><p>La entrega estimada es a mediados de 2028. Las 20 mensualidades del diferido corren durante la construcción.</p></details>
           <details><summary>¿Puedo pagar el 80% con crédito hipotecario?</summary><p>Sí. El 80% contra entrega puede cubrirse con crédito hipotecario, recursos propios o una combinación. Te ayudo a revisar la mejor opción.</p></details>
           <details><summary>¿Qué incluye la casa al entregarse?</summary><p>Cocina con barra de granito, estufa con horno y campana, clósets, minisplits, baños con cancel templado, cerradura digital, control de luces y clima desde la app, y roof con medio baño, barra con tarja, asador y pérgola.</p></details>
@@ -637,19 +713,22 @@
       </div>
     </section>
 
-    <!-- CTA FINAL -->
-    <section class="final">
-      <div class="final__media" aria-hidden="true">
-        <video muted loop playsinline preload="none" poster="assets/video/celebra.jpg" data-lazy-video><source data-src="assets/video/celebra.mp4" type="video/mp4"></video>
-      </div>
-      <div class="wrap final__inner">
-        <p class="eyebrow eyebrow--gold">Preventa · noviembre 2026</p>
-        <h2 class="final__title">Las casas de preventa<br><em>no esperan.</em></h2>
-        <p class="lead">Pregunta por las promociones vigentes y la disponibilidad de esta semana.</p>
-        <div class="final__ctas">
-          <a class="btn btn--wa btn--lg" data-wa data-wa-origin="cta-final" href="#" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Hablar con Fran</a>
-          <button class="btn btn--glass btn--lg" data-open-form="visita">Agendar visita</button>
+    <!-- CIERRE -->
+    <section class="final" id="cierre">
+      <div class="final__bg" aria-hidden="true"><img src="assets/img/v3/aerea-render.webp" alt="" loading="lazy" width="1800" height="1370"></div>
+      <div class="wrap final__grid">
+        <div class="final__copy">
+          <p class="eyebrow eyebrow--gold" data-reveal>Preventa · noviembre 2026</p>
+          <h2 class="final__title" data-split>Las casas de preventa<br><em>no esperan.</em></h2>
+          <p class="lead" data-reveal>Pregunta por las promociones vigentes y la disponibilidad de esta semana.</p>
+          <div class="cta-row" data-reveal>
+            <a class="btn btn--wa btn--lg magnetic" data-wa data-wa-origin="cta-final" href="#" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Hablar con Fran</a>
+            <button class="btn btn--glass btn--lg" data-open-form="visita">Agendar visita</button>
+          </div>
         </div>
+        <figure class="frame frame--916 final__video" data-reveal="clip">
+          <video muted loop playsinline preload="none" poster="assets/video/v3/celebra.jpg" data-lazy-video aria-label="Pareja celebrando su nueva casa"><source data-src="assets/video/v3/celebra.mp4" type="video/mp4"></video>
+        </figure>
       </div>
     </section>
   </main>
@@ -705,15 +784,14 @@
   <template id="tpl-full">
     <form class="form" data-lead-form="full" novalidate>
       <h3 class="form__title" data-full-title>Solicita tu propuesta</h3>
+      <div class="form__progress" aria-hidden="true"><span><i data-fp-bar></i></span><b data-fp-text>0 de 8</b></div>
       <div class="field"><label>Nombre completo</label><input name="nombre" autocomplete="name" required placeholder="Tu nombre"><small class="err" data-err="nombre"></small></div>
-      <div class="field-row">
-        <div class="field">
-          <label>WhatsApp o celular</label>
-          <div class="phone-in"><select name="lada" aria-label="Código de país"><option value="+52" selected>MX +52</option><option value="+1">US +1</option></select><input name="telefono" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="+52 646 000 0000"></div>
-          <small class="err" data-err="telefono"></small>
-        </div>
-        <div class="field"><label>Correo electrónico</label><input name="email" type="email" autocomplete="email" required placeholder="tu@correo.com"><small class="err" data-err="email"></small></div>
+      <div class="field">
+        <label>WhatsApp o celular</label>
+        <div class="phone-in"><select name="lada" aria-label="Código de país"><option value="+52" selected>MX +52</option><option value="+1">US +1</option></select><input name="telefono" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="+52 646 000 0000"></div>
+        <small class="err" data-err="telefono"></small>
       </div>
+      <div class="field"><label>Correo electrónico</label><input name="email" type="email" autocomplete="email" required placeholder="tu@correo.com"><small class="err" data-err="email"></small></div>
       <fieldset class="field">
         <legend>¿Buscas casa de 2 o 3 recámaras?</legend>
         <div class="chips">
@@ -761,7 +839,7 @@
         <small class="err" data-err="canal"></small>
       </fieldset>
       <input type="text" name="_honey" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="btn btn--navy btn--lg btn--block" type="submit"><span data-full-btn>Enviar mis datos</span></button>
+      <button class="btn btn--navy btn--lg btn--block" type="submit"><span data-full-btn>Enviar mis datos</span><svg class="ico ico--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
       <p class="form__legal">Todas las preguntas son obligatorias. Tus datos solo se usan para darte seguimiento.</p>
       <p class="form__status" role="status" aria-live="polite"></p>
     </form>
@@ -778,19 +856,25 @@
       </div>
       <div class="field"><label>Correo electrónico</label><input name="email" type="email" autocomplete="email" required placeholder="tu@correo.com"><small class="err" data-err="email"></small></div>
       <input type="text" name="_honey" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="btn btn--navy btn--lg btn--block" type="submit"><span data-gate-btn>Enviarme el brochure</span><svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+      <button class="btn btn--navy btn--lg btn--block" type="submit"><span data-gate-btn>Enviarme el brochure</span><svg class="ico ico--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
       <p class="form__legal">Al enviar se abre WhatsApp con tu solicitud para Fran.</p>
       <p class="form__status" role="status" aria-live="polite"></p>
     </form>
   </template>
 
-  <!-- Icons -->
+  <!-- Iconos -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <symbol id="i-wa" viewBox="0 0 24 24"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.9-4.45 9.9-9.91A9.86 9.86 0 0 0 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23a8.2 8.2 0 0 1 8.23 8.24c0 4.54-3.7 8.23-8.23 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.43-.06-.13-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48a.92.92 0 0 0-.66.31c-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.29Z"/></symbol>
-    <symbol id="i-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-wa" viewBox="0 0 24 24"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.910c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.9-4.45 9.9-9.91A9.86 9.86 0 0 0 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23a8.2 8.2 0 0 1 8.23 8.24c0 4.54-3.7 8.23-8.23 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.43-.06-.13-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48a.92.92 0 0 0-.66.31c-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.29Z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" d="M4 12h15m-6-6 6 6-6 6"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></g></symbol>
     <symbol id="i-doc" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M6 3h8l4 4v14H6V3Zm8 0v4h4M9 13h6m-6 3.5h6"/></symbol>
     <symbol id="i-pin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M12 3 5 6v5c0 5 3 8.5 7 10 4-1.5 7-5 7-10V6l-7-3Zm-3 9 2 2 4-4"/></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 9.5 12 4l9 5.5M5 10v8m4.67-8v8m4.66-8v8M19 10v8M3 20h18"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8m-3 3 2 2m-4 0 2 2"/></g></symbol>
+    <symbol id="i-wall" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 6h18v12H3V6Zm0 4h18M3 14h18M8 6v4m8-4v4M12 10v4m-6 0v4m12-4v4"/></symbol>
+    <symbol id="i-sink" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 12h18v2a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5v-2Zm9 0V6a2 2 0 0 1 4 0"/></symbol>
+    <symbol id="i-pergola" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 7h18M4 10h16M6 7v13m12-13v13M8 4v3m4-3v3m4-3v3"/></symbol>
     <symbol id="i-pool" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M2 18c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5M8 15V5a2 2 0 0 1 4 0m4 10V5a2 2 0 0 0-4 0M8 9h8m-8 3h8"/></symbol>
     <symbol id="i-paddle" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M14.5 3.5a5 5 0 0 1 0 7.1l-3 3-7-7 3-3a5 5 0 0 1 7 0ZM8 14l-4.5 4.5 2 2L10 16"/><circle cx="18.5" cy="18.5" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
     <symbol id="i-fire" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M12 21c3.9 0 6-2.5 6-5.5 0-4-3.5-5.5-4-10-2.5 2-4.5 5-4 7.5-1-.5-1.8-1.5-2-3-1.3 1.5-2 3.4-2 5.5 0 3 2.1 5.5 6 5.5Z"/></symbol>
@@ -800,7 +884,6 @@
     <symbol id="i-gym" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 9v6m3-8v10m12-10v10m3-8v6M6 12h12"/></symbol>
     <symbol id="i-table" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 9h18M6 9v10m12-10v10M12 9V5"/><circle cx="12" cy="4" r="1" fill="currentColor"/></symbol>
     <symbol id="i-sofa" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M4 11V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3M3 12a1.5 1.5 0 0 1 3 0v2h12v-2a1.5 1.5 0 0 1 3 0v5H3v-5Zm2 5v2m14-2v2"/></symbol>
-    <symbol id="i-shield" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M12 3 5 6v5c0 5 3 8.5 7 10 4-1.5 7-5 7-10V6l-7-3Zm-3 9 2 2 4-4"/></symbol>
     <symbol id="i-car" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M5 16h14v-4l-2-5H7l-2 5v4Zm0 0v2m14-2v2M5 12h14"/><circle cx="8" cy="14" r=".8" fill="currentColor"/><circle cx="16" cy="14" r=".8" fill="currentColor"/></symbol>
     <symbol id="i-drop" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/></symbol>
     <symbol id="i-path" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M8 21c0-5 8-5 8-9s-6-4-6-9M5 21h3m8-9h3"/></symbol>
@@ -809,7 +892,6 @@
     <symbol id="i-club" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 10 12 4l9 6M5 9v11h14V9M10 20v-5h4v5"/></symbol>
   </svg>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
   <script src="main.js" defer></script>
 </body>
 </html>

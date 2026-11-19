@@ -1,4 +1,4 @@
-/* Punta Pacífico · landing interactions (v2) */
+/* Punta Pacífico · landing (v3) — sin dependencias externas */
 (() => {
   'use strict';
 
@@ -12,12 +12,18 @@
     roi: { name: 'análisis de rentabilidad (ROI)', title: 'Recibe el análisis de rentabilidad', sub: 'Plusvalía, renta de estancia corta y años de recuperación. Fran te lo envía en PDF.', btn: 'Enviarme el análisis' }
   };
 
+  const root = document.documentElement;
+  root.classList.add('js');
   const $ = (s, c = document) => c.querySelector(s);
   const $$ = (s, c = document) => [...c.querySelectorAll(s)];
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const wa = (text) => `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(text)}`;
   const waUrl = wa(CONFIG.waText);
   const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const money = (n) => Math.round(n).toLocaleString('es-MX');
 
   /* ---------- UTM ---------- */
   const utm = {};
@@ -26,7 +32,7 @@
   try {
     if (Object.keys(utm).length) sessionStorage.setItem('pp_utm', JSON.stringify(utm));
     else Object.assign(utm, JSON.parse(sessionStorage.getItem('pp_utm') || '{}'));
-  } catch (e) { /* storage unavailable */ }
+  } catch (e) { /* storage no disponible */ }
 
   function track(event, data = {}) {
     try {
@@ -35,25 +41,27 @@
     } catch (e) { /* noop */ }
   }
 
-  /* ---------- WhatsApp links ---------- */
+  /* ---------- WhatsApp ---------- */
   $$('[data-wa]').forEach(a => {
     a.href = waUrl;
     a.addEventListener('click', () => track('whatsapp_click', { origen: a.dataset.waOrigin || '' }));
   });
 
-  /* ---------- Nav ---------- */
+  /* ---------- Nav fijo: fondo sólido, progreso de lectura y sección activa ---------- */
   const nav = $('[data-nav]');
+  const bar = $('[data-progress]');
   const mbar = $('[data-mbar]');
-  let lastY = 0;
-  const onScroll = () => {
+  let navTick = false;
+  const onScrollNav = () => {
+    navTick = false;
     const y = window.scrollY;
-    nav.classList.toggle('is-solid', y > 40);
-    nav.classList.toggle('is-hidden', y > 500 && y > lastY && !document.body.classList.contains('menu-open'));
-    if (mbar) mbar.classList.toggle('is-on', y > window.innerHeight * 0.6);
-    lastY = y;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    nav.classList.toggle('is-solid', y > 30);
+    if (bar) bar.style.transform = `scaleX(${max > 0 ? clamp(y / max, 0, 1) : 0})`;
+    if (mbar) mbar.classList.toggle('is-on', y > window.innerHeight * 0.55);
   };
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+  window.addEventListener('scroll', () => { if (!navTick) { navTick = true; requestAnimationFrame(onScrollNav); } }, { passive: true });
+  onScrollNav();
 
   const burger = $('[data-burger]');
   const mnav = $('[data-mnav]');
@@ -61,11 +69,11 @@
     burger.setAttribute('aria-expanded', String(open));
     burger.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
     mnav.hidden = !open;
-    document.body.classList.toggle('menu-open', open);
     document.body.style.overflow = open ? 'hidden' : '';
   };
   burger.addEventListener('click', () => toggleMenu(burger.getAttribute('aria-expanded') !== 'true'));
   $$('a, button', mnav).forEach(el => el.addEventListener('click', () => toggleMenu(false)));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !mnav.hidden) toggleMenu(false); });
 
   const links = $$('.nav__links a');
   const secIO = new IntersectionObserver(entries => entries.forEach(en => {
@@ -73,19 +81,78 @@
   }), { rootMargin: '-45% 0px -50% 0px' });
   links.forEach(l => { const s = $(l.getAttribute('href')); if (s) secIO.observe(s); });
 
-  /* ---------- Videos: load when near, pause when away ---------- */
+  /* ---------- Videos: cargan cerca de la vista y se pausan fuera ---------- */
+  const loadVideo = (v) => {
+    const src = v.querySelector('source[data-src]');
+    if (src) { src.src = src.dataset.src; src.removeAttribute('data-src'); v.load(); }
+  };
   const vio = new IntersectionObserver(entries => entries.forEach(en => {
     const v = en.target;
-    if (en.isIntersecting) {
-      const src = v.querySelector('source[data-src]');
-      if (src) { src.src = src.dataset.src; src.removeAttribute('data-src'); v.load(); }
-      const p = v.play(); if (p && p.catch) p.catch(() => {});
-    } else if (!v.paused) v.pause();
-  }), { rootMargin: '200px 0px' });
-  $$('video[data-lazy-video]').forEach(v => vio.observe(v));
+    if (en.isIntersecting) { loadVideo(v); const p = v.play(); if (p && p.catch) p.catch(() => {}); }
+    else if (!v.paused) v.pause();
+  }), { rootMargin: '250px 0px' });
+  $$('video[data-lazy-video]').forEach(v => {
+    if (v.offsetParent === null && getComputedStyle(v).display === 'none') return; // p. ej. video del roof en escritorio
+    vio.observe(v);
+  });
+  window.addEventListener('resize', () => {
+    $$('video[data-lazy-video]').forEach(v => { if (getComputedStyle(v).display !== 'none') vio.observe(v); });
+  });
   $$('.hero video').forEach(v => new IntersectionObserver(([en]) => { en.isIntersecting ? v.play().catch(() => {}) : v.pause(); }).observe(v));
 
-  /* ---------- Tabs ---------- */
+  /* ---------- Contadores ---------- */
+  const fmtCount = (v, el) => {
+    const d = +(el.dataset.decimals || 0);
+    if (el.hasAttribute('data-sep')) return v.toLocaleString('es-MX', { minimumFractionDigits: d, maximumFractionDigits: d });
+    return v.toFixed(d);
+  };
+  const countUp = (el, duration = 1500) => {
+    const to = parseFloat(el.dataset.count);
+    if (reduce || isNaN(to)) { el.textContent = fmtCount(to, el); return; }
+    const t0 = performance.now();
+    const step = (t) => {
+      const k = clamp((t - t0) / duration, 0, 1);
+      const e = 1 - Math.pow(1 - k, 3);
+      el.textContent = fmtCount(to * e, el);
+      if (k < 1) requestAnimationFrame(step); else el.textContent = fmtCount(to, el);
+    };
+    requestAnimationFrame(step);
+  };
+  const counters = $$('[data-count]');
+  if (!reduce) counters.forEach(el => { el.textContent = fmtCount(0, el); });
+
+  /* ---------- Revelados al hacer scroll (títulos por línea, fotos, listas) ---------- */
+  $$('[data-split]').forEach(el => {
+    el.innerHTML = el.innerHTML.split(/<br\s*\/?>/i).map((p, i) => `<span class="line" style="--i:${i}"><span>${p.trim()}</span></span>`).join('');
+  });
+  $$('[data-stagger]').forEach(list => {
+    [...list.children].forEach((child, i) => {
+      if (!child.hasAttribute('data-reveal')) child.setAttribute('data-reveal', '');
+      child.style.setProperty('--d', (i * 0.07).toFixed(2) + 's');
+    });
+  });
+  const revealTargets = $$('[data-reveal], [data-split], [data-chart], [data-bridge]');
+  const onIn = (el) => {
+    el.classList.add('in');
+    if (el.matches('[data-count]')) countUp(el);
+    $$('[data-count]', el).forEach(c => { if (!c.dataset.done && !c.closest('[hidden]')) { c.dataset.done = '1'; countUp(c); } });
+  };
+  if ('IntersectionObserver' in window && !reduce) {
+    const rio = new IntersectionObserver((entries, obs) => entries.forEach(en => {
+      if (en.isIntersecting) { onIn(en.target); obs.unobserve(en.target); }
+    }), { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    revealTargets.forEach(el => rio.observe(el));
+    // contadores sueltos (fuera de un contenedor revelado)
+    const cio = new IntersectionObserver((entries, obs) => entries.forEach(en => {
+      const el = en.target;
+      if (en.isIntersecting && !el.dataset.done && !el.hasAttribute('data-hero')) { el.dataset.done = '1'; countUp(el); obs.unobserve(el); }
+    }), { threshold: 0.6 });
+    counters.forEach(c => cio.observe(c));
+  } else {
+    revealTargets.forEach(el => el.classList.add('in'));
+  }
+
+  /* ---------- Tabs (prototipos y esquemas de pago) ---------- */
   $$('.tabs').forEach(list => {
     const tabs = $$('.tab', list);
     const ink = $('.tabs__ink', list);
@@ -101,6 +168,8 @@
       });
       moveInk(t);
       if (focus) t.focus();
+      const panel = document.getElementById(t.getAttribute('aria-controls'));
+      if (panel) $$('[data-count]', panel).forEach(c => { c.dataset.done = '1'; countUp(c, 1100); });
     };
     tabs.forEach((t, i) => {
       t.addEventListener('click', () => activate(t));
@@ -116,18 +185,107 @@
     if (document.fonts) document.fonts.ready.then(init);
   });
 
-  /* ---------- Plusvalía (datos del video Doctor V13) ---------- */
+  /* ---------- Exploradores (interiores y amenidades): un espacio a la vez ---------- */
+  $$('[data-explore]').forEach(ex => {
+    const btns = $$('[role="tab"]', ex);
+    const figs = $$('.explore__fig', ex);
+    const now = $('.explore__now', ex);
+    let current = 0;
+    const act = (i, focus) => {
+      if (i === current && !focus) return;
+      current = i;
+      btns.forEach((b, k) => { const on = k === i; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
+      figs.forEach((f, k) => f.classList.toggle('is-on', k === i));
+      if (now) now.textContent = btns[i].dataset.desc || '';
+      if (focus) btns[i].focus();
+      if (isMobile()) btns[i].scrollIntoView({ block: 'nearest', inline: 'center', behavior: reduce ? 'auto' : 'smooth' });
+    };
+    btns.forEach((b, i) => {
+      b.addEventListener('click', () => act(i));
+      if (finePointer) b.addEventListener('mouseenter', () => act(i));
+      b.addEventListener('keydown', e => {
+        const k = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
+        if (!k) return;
+        e.preventDefault();
+        act((i + k + btns.length) % btns.length, true);
+      });
+    });
+  });
+
+  /* ---------- Un día en Punta Pacífico: historia con video fijo ---------- */
+  const day = $('[data-day]');
+  if (day) {
+    const steps = $$('.day__step', day);
+    const cards = steps.map(s => $('.day__card', s));
+    const vids = $$('.day__video', day);
+    const bars = $$('.day__bars i', day);
+    const clock = $('[data-day-clock]', day);
+    let active = -1, ticking = false, loaded = false, listening = false;
+    const setActive = (i) => {
+      if (i === active) return;
+      active = i;
+      steps.forEach((s, k) => s.classList.toggle('is-on', k === i));
+      vids.forEach((v, k) => {
+        const on = k === i;
+        v.classList.toggle('is-on', on);
+        if (on) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } else v.pause();
+      });
+      if (clock) clock.textContent = steps[i].dataset.time;
+    };
+    const update = () => {
+      ticking = false;
+      const vh = window.innerHeight;
+      const line = vh * (isMobile() ? 0.74 : 0.66);
+      let idx = 0;
+      steps.forEach((s, k) => {
+        const r = cards[k].getBoundingClientRect();
+        const pos = isMobile() ? r.top : r.top + r.height / 2;
+        const h = s.offsetHeight || vh;
+        const p = clamp((line - pos) / (h * 0.85), 0, 1);
+        if (bars[k]) bars[k].style.transform = `scaleX(${k < steps.length - 1 ? p : clamp((line - pos) / (h * 0.4), 0, 1)})`;
+        if (pos <= line) idx = k;
+      });
+      setActive(idx);
+    };
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+    new IntersectionObserver(([en]) => {
+      if (en.isIntersecting) {
+        if (!loaded) { loaded = true; vids.forEach(loadVideo); }
+        if (!listening) { listening = true; window.addEventListener('scroll', onScroll, { passive: true }); }
+        update();
+        const v = vids[Math.max(active, 0)]; if (v) v.play().catch(() => {});
+      } else {
+        if (listening) { listening = false; window.removeEventListener('scroll', onScroll); }
+        vids.forEach(v => v.pause());
+      }
+    }, { rootMargin: '300px 0px' }).observe(day);
+    window.addEventListener('resize', onScroll);
+  }
+
+  /* ---------- Roof: paralaje suave en escritorio ---------- */
+  const roof = $('#roof');
+  const roofImg = $('[data-parallax]');
+  if (roof && roofImg && !reduce) {
+    let rt = false;
+    const par = () => {
+      rt = false;
+      if (isMobile()) { roofImg.style.transform = ''; return; }
+      const r = roof.getBoundingClientRect();
+      const vh = window.innerHeight;
+      if (r.bottom < 0 || r.top > vh) return;
+      const prog = clamp((vh - r.top) / (vh + r.height), 0, 1);
+      roofImg.style.transform = `translate3d(0, ${((prog - 0.5) * r.height * 0.12).toFixed(1)}px, 0)`;
+    };
+    window.addEventListener('scroll', () => { if (!rt) { rt = true; requestAnimationFrame(par); } }, { passive: true });
+    par();
+  }
+
+  /* ---------- Plusvalía (cifras del video Doctor V13) ---------- */
   const chart = $('[data-chart]');
-  const SERIES = {
-    months: [0, 25, 60, 96],
-    cons: [4.57, 5.37, 6.72, 8.46],
-    opt: [4.57, 5.57, 7.36, 9.80]
-  };
-  function renderChart(animate) {
-    if (!chart) return;
-    const W = 800, H = 360, PAD = { l: 6, r: 6, t: 34, b: 14 };
-    const min = 4.0, max = 10.2;
-    const x = i => PAD.l + (W - PAD.l - PAD.r) * (SERIES.months[i] / 96);
+  if (chart) {
+    const S = { months: [0, 25, 60, 96], cons: [4.57, 5.37, 6.72, 8.46], opt: [4.57, 5.57, 7.36, 9.80] };
+    const W = 800, H = 360, PAD = { l: 6, r: 6, t: 34, b: 14 }, min = 4.0, max = 10.2;
+    const x = i => PAD.l + (W - PAD.l - PAD.r) * (S.months[i] / 96);
     const y = v => PAD.t + (H - PAD.t - PAD.b) * (1 - (v - min) / (max - min));
     const path = arr => arr.map((v, i) => {
       if (!i) return `M${x(i)},${y(v)}`;
@@ -135,51 +293,63 @@
       return `C${cx},${py} ${cx},${y(v)} ${x(i)},${y(v)}`;
     }).join(' ');
     const svg = $('svg', chart);
-    const g = $('.chart__grid', svg);
-    g.innerHTML = [4, 5, 6, 7, 8, 9, 10].map(v => `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}"/>`).join('');
-    const lc = $('.chart__line--cons', svg), lo = $('.chart__line--opt', svg), area = $('.chart__area', svg);
-    lc.setAttribute('d', path(SERIES.cons));
-    lo.setAttribute('d', path(SERIES.opt));
-    area.setAttribute('d', path(SERIES.opt) + ` L${x(3)},${H - PAD.b} L${x(0)},${H - PAD.b} Z`);
-    const dots = $('.chart__dots', svg);
-    dots.innerHTML = SERIES.cons.map((v, i) => `<circle class="c" r="5" cx="${x(i)}" cy="${y(v)}"/>` + (i ? `<circle class="o" r="5" cx="${x(i)}" cy="${y(SERIES.opt[i])}"/>` : '')).join('');
-    $$('.chart__tip', chart).forEach(t => t.remove());
+    $('.chart__grid', svg).innerHTML = [4, 5, 6, 7, 8, 9, 10].map(v => `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}"/>`).join('');
+    $('.chart__line--cons', svg).setAttribute('d', path(S.cons));
+    $('.chart__line--opt', svg).setAttribute('d', path(S.opt));
+    $('.chart__area', svg).setAttribute('d', path(S.opt) + ` L${x(3)},${H - PAD.b} L${x(0)},${H - PAD.b} Z`);
+    $('.chart__dots', svg).innerHTML = S.cons.map((v, i) => `<circle class="c" r="5" cx="${x(i)}" cy="${y(v)}"/>` + (i ? `<circle class="o" r="5" cx="${x(i)}" cy="${y(S.opt[i])}"/>` : '')).join('');
     const pct = (px, py) => `left:${px / W * 100}%;top:${py / H * 100}%`;
-    chart.insertAdjacentHTML('beforeend', `<span class="chart__tip chart__tip--b" style="${pct(0, y(4.57))}">$4.57 M</span>`);
+    let tips = `<span class="chart__tip chart__tip--b" style="${pct(0, y(4.57))}">$4.57 M</span>`;
     for (let i = 1; i < 4; i++) {
-      chart.insertAdjacentHTML('beforeend', `<span class="chart__tip chart__tip--o" style="${pct(x(i), y(SERIES.opt[i]))}">$${SERIES.opt[i].toFixed(2)} M</span>`);
-      chart.insertAdjacentHTML('beforeend', `<span class="chart__tip chart__tip--c" style="${pct(x(i), y(SERIES.cons[i]))}">$${SERIES.cons[i].toFixed(2)} M</span>`);
+      tips += `<span class="chart__tip chart__tip--o" style="${pct(x(i), y(S.opt[i]))};transition-delay:${(1.5 + i * .15).toFixed(2)}s">$${S.opt[i].toFixed(2)} M</span>`;
+      tips += `<span class="chart__tip chart__tip--c" style="${pct(x(i), y(S.cons[i]))};transition-delay:${(1.6 + i * .15).toFixed(2)}s">$${S.cons[i].toFixed(2)} M</span>`;
     }
-    if (animate && window.gsap && !reduce) {
-      gsap.fromTo([lo, lc], { clipPath: 'inset(-20% 100% -20% 0)' }, { clipPath: 'inset(-20% 0% -20% 0)', duration: 2, stagger: .15, ease: 'power2.inOut' });
-      gsap.fromTo(area, { opacity: 0 }, { opacity: 1, duration: 1.4, delay: .7 });
-      gsap.fromTo($$('circle', dots), { scale: 0, transformOrigin: 'center' }, { scale: 1, duration: .5, stagger: .1, delay: .9, ease: 'back.out(3)' });
-      gsap.fromTo($$('.chart__tip', chart), { opacity: 0 }, { opacity: 1, duration: .5, stagger: .08, delay: 1.2 });
-    }
-  }
-  if (chart) {
-    renderChart(false);
-    new IntersectionObserver(([en], obs) => { if (en.isIntersecting) { renderChart(true); obs.disconnect(); } }, { threshold: .35 }).observe(chart);
+    chart.insertAdjacentHTML('beforeend', tips);
   }
 
-  /* ---------- Puente financiero (momento 2) ---------- */
+  /* ---------- Puente financiero: calculadora 2R / 3R ---------- */
   const bridge = $('[data-bridge]');
   if (bridge) {
     const ticks = $$('.bridge__ticks i', bridge);
-    const arc = $('.bridge__arc path', bridge);
-    const setTicks = (p) => ticks.forEach((t, i) => { const h = 18 + (i / (ticks.length - 1)) ** 2 * 78; t.style.height = (h * p) + 'px'; });
-    setTicks(1);
-    new IntersectionObserver(([en], obs) => {
-      if (!en.isIntersecting) return; obs.disconnect();
-      if (!window.gsap || reduce) return;
-      gsap.from($$('.bridge__step, .bridge__span > small, .bridge__span > b, .bridge__span > span', bridge), { y: 16, opacity: 0, duration: .8, stagger: .12, ease: 'power3.out' });
-      gsap.fromTo(arc, { clipPath: 'inset(-20% 100% -20% 0)' }, { clipPath: 'inset(-20% 0% -20% 0)', duration: 1.6, delay: .3, ease: 'power2.inOut' });
-      gsap.fromTo(ticks, { scaleY: 0, transformOrigin: 'bottom' }, { scaleY: 1, duration: .5, stagger: .05, delay: .5, ease: 'power2.out' });
-      gsap.from('.bridge__months', { scale: .6, opacity: 0, duration: .6, delay: 1.5, ease: 'back.out(2)' });
-    }, { threshold: .4 }).observe(bridge);
+    ticks.forEach((t, i) => { t.style.setProperty('--h', ((i / (ticks.length - 1)) ** 2).toFixed(3)); t.style.setProperty('--i', i); });
   }
+  const halfDown = (v) => Math.round(v - 1e-7);
+  const PAY = {
+    eng: p => halfDown(p * 0.10),
+    mes: p => Math.round(p * 0.10 / 20),
+    ent: p => halfDown(p * 0.80)
+  };
+  const CASH = {
+    final: p => Math.round(p * 0.95),
+    eng: p => Math.round(Math.round(p * 0.95) * 0.40),
+    mes: p => Math.floor(Math.round(Math.round(p * 0.95) * 0.40) / 19),
+    esc: p => Math.round(Math.round(p * 0.95) * 0.20)
+  };
+  const tweenMoney = (el, to) => {
+    const from = parseFloat(String(el.textContent).replace(/[^\d.]/g, '')) || 0;
+    if (reduce || from === to) { el.textContent = money(to); return; }
+    const t0 = performance.now(), dur = 700;
+    const step = (t) => {
+      const k = clamp((t - t0) / dur, 0, 1);
+      const e = 1 - Math.pow(1 - k, 3);
+      el.textContent = money(from + (to - from) * e);
+      if (k < 1) requestAnimationFrame(step); else el.textContent = money(to);
+    };
+    requestAnimationFrame(step);
+    const box = el.closest('.bridge__amt, em');
+    if (box) { box.classList.remove('bump'); void box.offsetWidth; box.classList.add('bump'); }
+  };
+  const setPrice = (p) => {
+    $$('[data-pay]').forEach(el => tweenMoney(el, PAY[el.dataset.pay](p)));
+    $$('[data-cash]').forEach(el => tweenMoney(el, CASH[el.dataset.cash](p)));
+  };
+  $$('.pay .seg button').forEach(b => b.addEventListener('click', () => {
+    $$('.pay .seg button').forEach(o => { const on = o === b; o.classList.toggle('is-on', on); o.setAttribute('aria-checked', String(on)); });
+    setPrice(+b.dataset.price);
+    track('pagos_prototipo', { prototipo: b.textContent.trim() });
+  }));
 
-  /* ---------- Forms ---------- */
+  /* ---------- Formularios ---------- */
   const tplFull = $('#tpl-full');
   const tplGate = $('#tpl-gate');
   const mountForm = (host, tpl) => {
@@ -190,11 +360,37 @@
     return form;
   };
 
+  function phoneDigits(form) {
+    const code = form.elements.lada ? form.elements.lada.value.replace(/\D/g, '') : '52';
+    let d = form.elements.telefono.value.replace(/\D/g, '');
+    if (d.length > 10 && d.startsWith(code)) d = d.slice(code.length);
+    if (code === '52' && d.length === 11 && d.startsWith('1')) d = d.slice(1);
+    return { code, d };
+  }
+  const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+
+  function progress(form) {
+    const box = $('.form__progress', form);
+    if (!box) return;
+    const v = n => (form.elements[n] ? String(form.elements[n].value || '').trim() : '');
+    const done = [
+      v('nombre').length >= 3,
+      phoneDigits(form).d.length === 10,
+      emailOk(v('email')),
+      !!form.querySelector('input[name="recamaras"]:checked'),
+      !!form.querySelector('input[name="proposito"]:checked'),
+      !!form.querySelector('input[name="financiamiento"]:checked'),
+      !!form.querySelector('input[name="plazo"]:checked'),
+      !!form.querySelector('input[name="canal"]:checked')
+    ].filter(Boolean).length;
+    $('[data-fp-bar]', box).style.width = (done / 8 * 100) + '%';
+    $('[data-fp-text]', box).textContent = done === 8 ? '¡Listo para enviar!' : `${done} de 8`;
+    box.classList.toggle('is-done', done === 8);
+  }
+
   function wireForm(form) {
-    // phone placeholder follows the country code
     const lada = form.elements.lada, tel = form.elements.telefono;
-    if (lada && tel) lada.addEventListener('change', () => { tel.placeholder = lada.value === '+1' ? '+1 619 000 0000' : '+52 646 000 0000'; });
-    // propósito: máximo 2 opciones
+    if (lada && tel) lada.addEventListener('change', () => { tel.placeholder = lada.value === '+1' ? '+1 619 000 0000' : '+52 646 000 0000'; progress(form); });
     $$('.chips[data-max]', form).forEach(group => {
       const max = +group.dataset.max;
       const boxes = $$('input[type=checkbox]', group);
@@ -203,33 +399,23 @@
         boxes.forEach(b => { b.disabled = !b.checked && n >= max; });
       });
     });
-    // clear errors on input
-    form.addEventListener('input', e => {
-      const el = e.target;
+    const clear = (el) => {
       el.removeAttribute('aria-invalid');
-      const name = el.name;
-      const err = $(`[data-err="${name}"]`, form); if (err) err.textContent = '';
+      const err = $(`[data-err="${el.name}"]`, form); if (err) err.textContent = '';
       const grp = el.closest('.chips'); if (grp) grp.classList.remove('is-invalid');
-    });
-    form.addEventListener('change', e => { const grp = e.target.closest('.chips'); if (grp) { grp.classList.remove('is-invalid'); const err = $(`[data-err="${e.target.name}"]`, form); if (err) err.textContent = ''; } });
+    };
+    form.addEventListener('input', e => { clear(e.target); progress(form); });
+    form.addEventListener('change', e => { clear(e.target); progress(form); });
     form.addEventListener('submit', submitLead);
-  }
-
-  function phoneDigits(form) {
-    const code = form.elements.lada ? form.elements.lada.value.replace(/\D/g, '') : '52';
-    let d = form.elements.telefono.value.replace(/\D/g, '');
-    if (d.length > 10 && d.startsWith(code)) d = d.slice(code.length);
-    if (code === '52' && d.length === 11 && d.startsWith('1')) d = d.slice(1);
-    return { code, d };
+    progress(form);
   }
 
   function validate(form) {
     const errors = {};
     const v = n => (form.elements[n] ? String(form.elements[n].value || '').trim() : '');
     if (v('nombre').length < 3) errors.nombre = 'Escribe tu nombre completo.';
-    const { d } = phoneDigits(form);
-    if (d.length !== 10) errors.telefono = 'Escribe tu número a 10 dígitos.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v('email'))) errors.email = 'Escribe un correo válido.';
+    if (phoneDigits(form).d.length !== 10) errors.telefono = 'Escribe tu número a 10 dígitos.';
+    if (!emailOk(v('email'))) errors.email = 'Escribe un correo válido.';
     if (form.dataset.leadForm === 'full') {
       [['recamaras', 'Elige 2 o 3 recámaras.'], ['financiamiento', 'Elige cómo la vas a adquirir.'], ['plazo', 'Elige un plazo.'], ['canal', 'Elige cómo prefieres que te contacte.']].forEach(([n, msg]) => {
         if (!form.querySelector(`input[name="${n}"]:checked`)) errors[n] = msg;
@@ -239,16 +425,15 @@
       if (prop > 2) errors.proposito = 'Elige máximo 2 opciones.';
     }
     $$('[data-err]', form).forEach(e => { e.textContent = errors[e.dataset.err] || ''; });
-    ['nombre', 'telefono', 'email'].forEach(n => { const el = form.elements[n]; if (el) el.toggleAttribute('aria-invalid', !!errors[n]); if (el && errors[n]) el.setAttribute('aria-invalid', 'true'); });
+    ['nombre', 'telefono', 'email'].forEach(n => { const el = form.elements[n]; if (!el) return; if (errors[n]) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); });
     ['recamaras', 'proposito', 'financiamiento', 'plazo', 'canal'].forEach(n => {
       const any = form.querySelector(`input[name="${n}"]`);
       if (any) any.closest('.chips').classList.toggle('is-invalid', !!errors[n]);
     });
     const first = Object.keys(errors)[0];
     if (first) {
-      const el = form.elements[first];
-      const target = el && el.length !== undefined && !el.tagName ? el[0] : el;
-      if (target && target.focus) target.focus({ preventScroll: false });
+      const target = form.querySelector(`[name="${first}"]`);
+      if (target) { target.focus({ preventScroll: true }); target.closest('.field').scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' }); }
     }
     return !first;
   }
@@ -265,7 +450,7 @@
       status.classList.add('is-err');
       return;
     }
-    const kind = form.dataset.leadForm; // full | gate
+    const kind = form.dataset.leadForm;
     const origin = form.dataset.origin || (kind === 'gate' ? 'material' : 'formulario');
     const { code, d } = phoneDigits(form);
     const val = n => String(form.elements[n].value || '').trim();
@@ -312,7 +497,7 @@
       const msg = `Hola, llené el formulario de la web de Punta Pacífico, me interesa obtener el ${material ? material.name : 'brochure'}.`;
       const url = wa(msg);
       form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>¡Listo, ${esc(val('nombre').split(/\s+/)[0] || '')}!</h4>
-        <p>Te estamos llevando a WhatsApp para que Fran te envíe el ${esc(material ? material.name : 'material')}.</p>
+        <p>Te llevamos a WhatsApp para que Fran te envíe el ${esc(material ? material.name : 'material')}.</p>
         <a class="btn btn--wa btn--lg" href="${url}" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Abrir WhatsApp</a></div>`;
       setTimeout(() => { window.location.href = url; }, 900);
       return;
@@ -326,20 +511,18 @@
     }
     const first = val('nombre').split(/\s+/)[0] || '';
     form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>¡Gracias, ${esc(first)}!</h4>
-      <p>Recibí tus datos. Te contacto en breve por ${esc(pick('canal') === '—' ? 'WhatsApp' : payload.Canal_preferido)}.</p>
-      <a class="btn btn--wa" href="${waUrl}" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Adelantar por WhatsApp</a></div>`;
+      <p>Recibí tus datos. Te contacto en breve por ${esc(payload.Canal_preferido || 'WhatsApp')}.</p>
+      <a class="btn btn--wa btn--lg" href="${waUrl}" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Adelantar por WhatsApp</a></div>`;
   }
 
-  // Formulario completo en la sección de contacto
   const mainHost = $('[data-form-host="main"]');
   if (mainHost) { const f = mountForm(mainHost, tplFull); f.dataset.origin = 'formulario-contacto'; }
 
-  // Formulario bloqueado en la sección de material
   const inlineGate = $('#material form[data-lead-form="gate"]');
   if (inlineGate) { wireForm(inlineGate); inlineGate.dataset.origin = 'material-seccion'; }
   const setDoc = (doc) => {
     $$('[data-doc]').forEach(b => { const on = b.dataset.doc === doc; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); });
-    $$('[data-doc-card]').forEach(c => { c.hidden = c.dataset.docCard !== doc; c.classList.toggle('is-on', c.dataset.docCard === doc); });
+    $$('[data-doc-card]').forEach(c => { const on = c.dataset.docCard === doc; c.hidden = !on; c.classList.toggle('is-on', on); if (on) c.classList.add('in'); });
     if (inlineGate) { inlineGate.dataset.material = doc; const b = $('[data-gate-btn]', inlineGate); if (b) b.textContent = MATERIAL[doc].btn; }
   };
   $$('[data-doc]').forEach(b => b.addEventListener('click', () => setDoc(b.dataset.doc)));
@@ -372,7 +555,7 @@
     form.dataset.origin = key;
     form.dataset.interes = b.dataset.interes || '';
     $('[data-full-btn]', form).textContent = c.b;
-    if (b.dataset.interes) { const r = form.querySelector(`input[name="recamaras"][value="${b.dataset.interes}"]`); if (r) r.checked = true; }
+    if (b.dataset.interes) { const r = form.querySelector(`input[name="recamaras"][value="${b.dataset.interes}"]`); if (r) { r.checked = true; progress(form); } }
     openModal(c.t, c.s);
     track('form_open', { origen: key });
   }));
@@ -397,40 +580,56 @@
     }
   });
 
-  /* ---------- Lightbox (plantas y galería) ---------- */
-  $$('.proto__plans img, .g img').forEach(img => img.addEventListener('click', () => {
+  /* ---------- Zoom de planos ---------- */
+  $$('[data-zoom]').forEach(btn => btn.addEventListener('click', () => {
+    const img = $('img', btn);
     const lb = document.createElement('div');
     lb.className = 'lightbox';
     lb.setAttribute('role', 'dialog');
-    lb.setAttribute('aria-label', img.alt);
-    lb.innerHTML = `<img src="${img.currentSrc || img.src}" alt="${esc(img.alt)}">`;
-    const close = () => { lb.remove(); document.removeEventListener('keydown', onKey); };
+    lb.setAttribute('aria-label', img ? img.alt : 'Plano');
+    lb.innerHTML = `<img src="${esc(btn.dataset.zoom)}" alt="${esc(img ? img.alt : '')}">`;
+    const close = () => { lb.remove(); document.removeEventListener('keydown', onKey); btn.focus(); };
     const onKey = e => { if (e.key === 'Escape') close(); };
     lb.addEventListener('click', close);
     document.addEventListener('keydown', onKey);
     document.body.appendChild(lb);
   }));
 
+  /* ---------- Botones: onda al tocar y efecto magnético ---------- */
+  document.addEventListener('pointerdown', e => {
+    const b = e.target.closest('.btn, .mbar a, .mbar button');
+    if (!b || reduce) return;
+    const r = b.getBoundingClientRect();
+    const size = Math.max(r.width, r.height) * 2.2;
+    const s = document.createElement('span');
+    s.className = 'ripple';
+    s.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - r.left - size / 2}px;top:${e.clientY - r.top - size / 2}px`;
+    b.appendChild(s);
+    setTimeout(() => s.remove(), 700);
+  });
+  if (finePointer && !reduce) {
+    $$('.magnetic').forEach(b => {
+      b.addEventListener('pointermove', e => {
+        const r = b.getBoundingClientRect();
+        b.style.translate = `${((e.clientX - r.left - r.width / 2) * 0.22).toFixed(1)}px ${((e.clientY - r.top - r.height / 2) * 0.32).toFixed(1)}px`;
+      });
+      b.addEventListener('pointerleave', () => { b.style.translate = ''; });
+    });
+  }
+
   const fab = $('.fab');
   if (fab) setTimeout(() => { fab.classList.add('show-tip'); setTimeout(() => fab.classList.remove('show-tip'), 5000); }, 9000);
 
-  /* ---------- Hero entrance (una sola vez) ---------- */
-  const title = $('.hero__title[data-split]');
-  if (title) title.innerHTML = title.innerHTML.split(/<br\s*\/?>/i).map(p => `<span class="line"><span>${p.trim()}</span></span>`).join('');
+  /* ---------- Carga: oculta el loader y arranca la entrada del hero ---------- */
   let started = false;
-  function start() {
-    if (started) return; started = true;
-    document.documentElement.classList.add('is-loaded');
-    if (!window.gsap || reduce) return;
-    gsap.timeline({ defaults: { ease: 'expo.out' } })
-      .from('.hero__img, .hero__video', { scale: 1.12, duration: 2.2, ease: 'power3.out' }, 0)
-      .from('.hero__eyebrow', { y: 18, opacity: 0, duration: 1 }, .2)
-      .from('.hero__title .line > span', { yPercent: 110, duration: 1.3, stagger: .12 }, .25)
-      .from('.hero__lead, .hero__price', { y: 22, opacity: 0, duration: 1.1, stagger: .1 }, .6)
-      .from('.hero__ctas .btn', { y: 20, opacity: 0, duration: 1, stagger: .08, clearProps: 'transform' }, .8)
-      .from('.hero__card', { x: 50, opacity: 0, duration: 1.4 }, .5)
-      .from('.nav', { opacity: 0, duration: 1, clearProps: 'opacity' }, .4);
-  }
-  window.addEventListener('load', () => setTimeout(start, 200));
-  setTimeout(start, 2600);
+  const start = () => {
+    if (started) return;
+    started = true;
+    root.classList.add('is-loaded');
+    const h = $('[data-hero]');
+    if (h) setTimeout(() => countUp(h, 1300), reduce ? 0 : 650);
+  };
+  if (document.readyState === 'complete') setTimeout(start, 150);
+  else window.addEventListener('load', () => setTimeout(start, 150));
+  setTimeout(start, 2400);
 })();
