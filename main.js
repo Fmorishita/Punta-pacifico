@@ -645,6 +645,7 @@
   try { promoShown = sessionStorage.getItem('pp_promo') === '1'; } catch (e) { /* noop */ }
   const t0 = Date.now();
   const showPromo = () => {
+    try { if (sessionStorage.getItem('pp_promo') === '1') promoShown = true; } catch (e) { /* noop */ }
     if (promoShown || !modal.hidden || Date.now() - t0 < 6000) return;
     promoShown = true;
     try { sessionStorage.setItem('pp_promo', '1'); } catch (e) { /* noop */ }
