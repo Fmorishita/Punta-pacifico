@@ -8,7 +8,9 @@
   const CONFIG = {
     whatsapp: '526462563006',
     waText: L('Hola Fran, vi la web de Punta Pacífico y me interesa comprar una casa', "Hi Fran, I saw the Punta Pacífico website and I'm interested in buying a home"),
-    formEndpoint: 'https://formsubmit.co/ajax/fmejiam@sisol.com.mx'
+    formEndpoint: 'https://formsubmit.co/ajax/fmejiam@sisol.com.mx',
+    zoomEndpoint: '/api/zoom-meeting',
+    mapsUrl: 'https://maps.app.goo.gl/8SuSAerwhwJd1gkg9'
   };
   const MATERIAL = EN ? {
     brochure: { name: 'brochure', title: 'Get the brochure', sub: 'Prices, floor plans, amenities and terms · November 2026. Fran sends it to you on WhatsApp.', btn: 'Send me the brochure', msg: "Hi, I filled out the form on the Punta Pacífico website and I'd like to get the brochure." },
@@ -295,31 +297,52 @@
   }
 
   /* ---------- Plusvalía (cifras del video Doctor V13) ---------- */
+  // Se dibuja al tamaño real del contenedor (sin deformar puntos ni textos) y se vuelve a dibujar al cambiar de tamaño.
   const chart = $('[data-chart]');
   if (chart) {
     const S = { months: [0, 25, 60, 96], cons: [4.57, 5.37, 6.72, 8.46], opt: [4.57, 5.57, 7.36, 9.80] };
-    const W = 800, H = 360, PAD = { l: 6, r: 6, t: 34, b: 14 }, min = 4.0, max = 10.2;
-    const x = i => PAD.l + (W - PAD.l - PAD.r) * (S.months[i] / 96);
-    const y = v => PAD.t + (H - PAD.t - PAD.b) * (1 - (v - min) / (max - min));
-    const path = arr => arr.map((v, i) => {
-      if (!i) return `M${x(i)},${y(v)}`;
-      const px = x(i - 1), py = y(arr[i - 1]), cx = (px + x(i)) / 2;
-      return `C${cx},${py} ${cx},${y(v)} ${x(i)},${y(v)}`;
-    }).join(' ');
+    const plot = $('.chart__plot', chart) || chart;
     const svg = $('svg', chart);
-    $('.chart__grid', svg).innerHTML = [4, 5, 6, 7, 8, 9, 10].map(v => `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}"/>`).join('');
-    $('.chart__line--cons', svg).setAttribute('d', path(S.cons));
-    $('.chart__line--opt', svg).setAttribute('d', path(S.opt));
-    $('.chart__area', svg).setAttribute('d', path(S.opt) + ` L${x(3)},${H - PAD.b} L${x(0)},${H - PAD.b} Z`);
-    $('.chart__dots', svg).innerHTML = S.cons.map((v, i) => `<circle class="c" r="5" cx="${x(i)}" cy="${y(v)}"/>` + (i ? `<circle class="o" r="5" cx="${x(i)}" cy="${y(S.opt[i])}"/>` : '')).join('');
-    const pct = (px, py) => `left:${px / W * 100}%;top:${py / H * 100}%`;
+    const axis = $$('.chart__labels span', chart);
     const lab = v => EN ? `$${Math.round(v * 1e6 / FX / 1000)}K` : `$${v.toFixed(2)} M`;
-    let tips = `<span class="chart__tip chart__tip--b" style="${pct(0, y(4.57))}">${lab(4.57)}</span>`;
-    for (let i = 1; i < 4; i++) {
-      tips += `<span class="chart__tip chart__tip--o" style="${pct(x(i), y(S.opt[i]))};transition-delay:${(1.5 + i * .15).toFixed(2)}s">${lab(S.opt[i])}</span>`;
-      tips += `<span class="chart__tip chart__tip--c" style="${pct(x(i), y(S.cons[i]))};transition-delay:${(1.6 + i * .15).toFixed(2)}s">${lab(S.cons[i])}</span>`;
-    }
-    chart.insertAdjacentHTML('beforeend', tips);
+    let drawn = false, lastW = 0, lastH = 0;
+    const draw = () => {
+      const W = Math.round(plot.clientWidth), H = Math.round(plot.clientHeight);
+      if (!W || !H || (W === lastW && H === lastH)) return;
+      lastW = W; lastH = H;
+      const PAD = { l: 8, r: 8, t: 36, b: 34 }, min = 4.0, max = 10.2;
+      const x = i => PAD.l + (W - PAD.l - PAD.r) * (S.months[i] / 96);
+      const y = v => PAD.t + (H - PAD.t - PAD.b) * (1 - (v - min) / (max - min));
+      const f = n => n.toFixed(1);
+      const path = arr => arr.map((v, i) => {
+        if (!i) return `M${f(x(i))},${f(y(v))}`;
+        const px = x(i - 1), py = y(arr[i - 1]), cx = (px + x(i)) / 2;
+        return `C${f(cx)},${f(py)} ${f(cx)},${f(y(v))} ${f(x(i))},${f(y(v))}`;
+      }).join(' ');
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      $('.chart__grid', svg).innerHTML = [4, 5, 6, 7, 8, 9, 10].map(v => `<line x1="0" x2="${W}" y1="${f(y(v))}" y2="${f(y(v))}"/>`).join('');
+      $('.chart__line--cons', svg).setAttribute('d', path(S.cons));
+      $('.chart__line--opt', svg).setAttribute('d', path(S.opt));
+      $('.chart__area', svg).setAttribute('d', path(S.opt) + ` L${f(x(3))},${f(y(min))} L${f(x(0))},${f(y(min))} Z`);
+      const r = W < 480 ? 4.5 : 5.5;
+      $('.chart__dots', svg).innerHTML = S.cons.map((v, i) => `<circle class="c" r="${r}" cx="${f(x(i))}" cy="${f(y(v))}"/>` + (i ? `<circle class="o" r="${r}" cx="${f(x(i))}" cy="${f(y(S.opt[i]))}"/>` : '')).join('');
+      // Etiquetas: optimista arriba del punto, conservador abajo; la última se alinea a la derecha para no salirse
+      $$('.chart__tip', plot).forEach(t => t.remove());
+      const instant = drawn && chart.classList.contains('in');
+      const tip = (cls, i, v, ax, ay, d) => `<span class="chart__tip ${cls}" aria-hidden="true" style="left:${f(x(i))}px;top:${f(y(v))}px;transform:translate(${ax},${ay});transition-delay:${instant ? 0 : d}s">${lab(v)}</span>`;
+      let html = tip('chart__tip--b', 0, S.cons[0], '0', '50%', 1.5);
+      for (let i = 1; i < 4; i++) {
+        const ax = i === 3 ? '-100%' : '-50%';
+        html += tip('chart__tip--o', i, S.opt[i], ax, '-150%', (1.5 + i * .15).toFixed(2));
+        html += tip('chart__tip--c', i, S.cons[i], ax, '50%', (1.6 + i * .15).toFixed(2));
+      }
+      plot.insertAdjacentHTML('beforeend', html);
+      axis.forEach((s, i) => { if (i < 4) s.style.left = f(x(i)) + 'px'; });
+      drawn = true;
+    };
+    draw();
+    if ('ResizeObserver' in window) new ResizeObserver(draw).observe(plot);
+    else window.addEventListener('resize', draw);
   }
 
   /* ---------- Puente financiero: calculadora 2R / 3R ---------- */
@@ -366,6 +389,8 @@
   }));
 
   /* ---------- Formularios ---------- */
+  // Formulario completo en 2 pasos: 1) nombre, WhatsApp y correo (se avisa a Fran de inmediato para no perder el contacto)
+  // 2) perfil de compra y, si elige visita o videollamada, día y hora. La videollamada crea una reunión de Zoom.
   const tplFull = $('#tpl-full');
   const tplGate = $('#tpl-gate');
   const mountForm = (host, tpl) => {
@@ -384,29 +409,97 @@
     return { code, d };
   }
   const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+  const fval = (form, n) => { const el = form.elements[n]; return el && typeof el.value === 'string' ? el.value.trim() : ''; };
+  const picked = (form, n) => { const c = form.querySelector(`input[name="${n}"]:checked`); return c ? c.value : ''; };
+
+  /* Citas: días y horarios en hora de Ensenada (America/Tijuana) */
+  const TZ = 'America/Tijuana';
+  const SLOTS = ['10:00', '11:00', '12:00', '13:00', '16:00', '17:00', '18:00'];
+  const SLOT_DAYS = 7;
+  const SLOT_CANAL = { 'Visita en físico': 'visita', 'Videollamada': 'zoom' };
+  const slotKind = (form) => SLOT_CANAL[picked(form, 'canal')] || '';
+  const tzParts = (d, opts) => Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: TZ, hourCycle: 'h23', ...opts }).formatToParts(d).map(p => [p.type, p.value]));
+  const tjTodayUTC = () => { const p = tzParts(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' }); return Date.UTC(+p.year, +p.month - 1, +p.day); };
+  const tjToUTC = (ymd, hm) => {
+    const [Y, M, D] = ymd.split('-').map(Number), [h, mi] = hm.split(':').map(Number);
+    const guess = Date.UTC(Y, M - 1, D, h, mi);
+    const p = tzParts(new Date(guess), { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const seen = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute);
+    return new Date(guess - (seen - guess));
+  };
+  const dayLabel = (ymd, opts, loc = EN ? 'en-US' : 'es-MX') => new Date(ymd + 'T12:00:00Z').toLocaleDateString(loc, { timeZone: 'UTC', ...opts }).replace(/\./g, '');
+  const timeLabel = (hm, en = EN) => { if (!en) return hm; const [h, m] = hm.split(':').map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`; };
+  const longWhen = (ymd, hm) => `${dayLabel(ymd, { weekday: 'long', day: 'numeric', month: 'long' })} ${L('a las', 'at')} ${timeLabel(hm)}`;
+  const whenES = (ymd, hm) => `${dayLabel(ymd, { weekday: 'long', day: 'numeric', month: 'long' }, 'es-MX')} a las ${hm}`;
+  const shortES = (ymd, hm) => `${dayLabel(ymd, { weekday: 'short', day: 'numeric', month: 'short' }, 'es-MX')} ${hm}`;
+
+  function buildSlots(form) {
+    const days = $('[data-days]', form), times = $('[data-times]', form);
+    if (!days || !times) return;
+    const t0 = tjTodayUTC();
+    let html = '';
+    for (let k = 1; k <= SLOT_DAYS; k++) {
+      const ymd = new Date(t0 + k * 864e5).toISOString().slice(0, 10);
+      const top = k === 1 ? L('Mañana', 'Tomorrow') : dayLabel(ymd, { weekday: 'short' });
+      html += `<label><input type="radio" name="fecha" value="${ymd}"><span><small>${esc(top)}</small>${esc(dayLabel(ymd, { day: 'numeric', month: 'short' }))}</span></label>`;
+    }
+    days.innerHTML = html;
+    times.innerHTML = SLOTS.map(t => `<label><input type="radio" name="hora" value="${t}"><span>${esc(timeLabel(t))}</span></label>`).join('');
+  }
+
+  function syncSlot(form) {
+    const box = $('[data-slot]', form);
+    if (!box) return;
+    const kind = slotKind(form);
+    box.hidden = !kind;
+    const note = $('[data-slot-note]', form);
+    if (note) {
+      note.textContent = kind === 'zoom'
+        ? L('Al enviar se crea tu videollamada de Zoom y te muestro el enlace.', 'When you submit, your Zoom call is created and you get the link right away.')
+        : kind === 'visita' ? L('Te recibo en el punto de venta, en la zona norte de Ensenada.', 'I’ll meet you at the sales office in northern Ensenada.') : '';
+    }
+  }
 
   function progress(form) {
     const box = $('.form__progress', form);
     if (!box) return;
-    const v = n => (form.elements[n] ? String(form.elements[n].value || '').trim() : '');
-    const done = [
-      v('nombre').length >= 3,
-      phoneDigits(form).d.length === 10,
-      emailOk(v('email')),
-      !!form.querySelector('input[name="recamaras"]:checked'),
-      !!form.querySelector('input[name="proposito"]:checked'),
-      !!form.querySelector('input[name="financiamiento"]:checked'),
-      !!form.querySelector('input[name="plazo"]:checked'),
-      !!form.querySelector('input[name="canal"]:checked')
-    ].filter(Boolean).length;
-    $('[data-fp-bar]', box).style.width = (done / 8 * 100) + '%';
-    $('[data-fp-text]', box).textContent = done === 8 ? L('¡Listo para enviar!', 'Ready to send!') : `${done} ${L('de', 'of')} 8`;
-    box.classList.toggle('is-done', done === 8);
+    const bar = $('[data-fp-bar]', box), txt = $('[data-fp-text]', box);
+    if (form.dataset.step !== '2') {
+      const done = [fval(form, 'nombre').length >= 3, phoneDigits(form).d.length === 10, emailOk(fval(form, 'email'))].filter(Boolean).length;
+      bar.style.width = (done / 3 * 50) + '%';
+      txt.textContent = L('Paso 1 de 2 · Tus datos', 'Step 1 of 2 · Your details');
+      box.classList.remove('is-done');
+      return;
+    }
+    const items = ['recamaras', 'proposito', 'financiamiento', 'plazo', 'canal'].map(n => !!picked(form, n));
+    if (slotKind(form)) items.push(!!picked(form, 'fecha') && !!picked(form, 'hora'));
+    const done = items.filter(Boolean).length, total = items.length;
+    bar.style.width = (50 + done / total * 50) + '%';
+    txt.textContent = done === total ? L('¡Listo para enviar!', 'Ready to send!') : L(`Paso 2 de 2 · ${done} de ${total}`, `Step 2 of 2 · ${done} of ${total}`);
+    box.classList.toggle('is-done', done === total);
+  }
+
+  function goStep(form, n) {
+    form.dataset.step = String(n);
+    $$('[data-step-panel]', form).forEach(p => { p.hidden = p.dataset.stepPanel !== String(n); });
+    const hello = $('[data-hello]', form);
+    if (n === 2 && hello) {
+      const first = fval(form, 'nombre').split(/\s+/)[0] || '';
+      hello.textContent = L(`Gracias, ${first}. Ahora cuéntame qué buscas:`, `Thanks, ${first}. Now tell me what you’re looking for:`);
+    }
+    progress(form);
+    const box = form.closest('.modal__box');
+    if (box) box.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    else if (form.getBoundingClientRect().top < 90) form.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+    const target = n === 2 ? hello : form.elements.nombre;
+    if (target) target.focus({ preventScroll: true });
+    track('form_step', { paso: n, origen: form.dataset.origin || '' });
   }
 
   function wireForm(form) {
     const lada = form.elements.lada, tel = form.elements.telefono;
     if (lada && tel) lada.addEventListener('change', () => { tel.placeholder = lada.value === '+1' ? '+1 619 000 0000' : '+52 646 000 0000'; progress(form); });
+    buildSlots(form);
     $$('.chips[data-max]', form).forEach(group => {
       const max = +group.dataset.max;
       const boxes = $$('input[type=checkbox]', group);
@@ -416,120 +509,267 @@
       });
     });
     const clear = (el) => {
+      if (!el.name) return;
       el.removeAttribute('aria-invalid');
       const err = $(`[data-err="${el.name}"]`, form); if (err) err.textContent = '';
       const grp = el.closest('.chips'); if (grp) grp.classList.remove('is-invalid');
     };
     form.addEventListener('input', e => { clear(e.target); progress(form); });
-    form.addEventListener('change', e => { clear(e.target); progress(form); });
+    form.addEventListener('change', e => {
+      clear(e.target);
+      if (e.target.name === 'canal') {
+        syncSlot(form);
+        const slot = $('[data-slot]', form);
+        if (slot && !slot.hidden) setTimeout(() => slot.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }), 80);
+      }
+      progress(form);
+    });
+    const back = $('[data-back]', form);
+    if (back) back.addEventListener('click', () => goStep(form, 1));
     form.addEventListener('submit', submitLead);
     progress(form);
   }
 
-  function validate(form) {
+  function validate(form, step) {
     const errors = {};
-    const v = n => (form.elements[n] ? String(form.elements[n].value || '').trim() : '');
-    if (v('nombre').length < 3) errors.nombre = L('Escribe tu nombre completo.', 'Enter your full name.');
-    if (phoneDigits(form).d.length !== 10) errors.telefono = L('Escribe tu número a 10 dígitos.', 'Enter your 10-digit number.');
-    if (!emailOk(v('email'))) errors.email = L('Escribe un correo válido.', 'Enter a valid email.');
-    if (form.dataset.leadForm === 'full') {
-      [['recamaras', L('Elige 2 o 3 recámaras.', 'Choose 2 or 3 bedrooms.')], ['financiamiento', L('Elige cómo la vas a adquirir.', 'Choose how you will buy.')], ['plazo', L('Elige un plazo.', 'Choose a timeframe.')], ['canal', L('Elige cómo prefieres que te contacte.', 'Choose how you prefer to be contacted.')]].forEach(([n, msg]) => {
-        if (!form.querySelector(`input[name="${n}"]:checked`)) errors[n] = msg;
-      });
+    const full = form.dataset.leadForm === 'full';
+    if (!full || step === 1) {
+      if (fval(form, 'nombre').length < 3) errors.nombre = L('Escribe tu nombre completo.', 'Enter your full name.');
+      if (phoneDigits(form).d.length !== 10) errors.telefono = L('Escribe tu número a 10 dígitos.', 'Enter your 10-digit number.');
+      if (!emailOk(fval(form, 'email'))) errors.email = L('Escribe un correo válido.', 'Enter a valid email.');
+    }
+    if (full && step === 2) {
+      if (!picked(form, 'recamaras')) errors.recamaras = L('Elige 2 o 3 recámaras.', 'Choose 2 or 3 bedrooms.');
       const prop = $$('input[name="proposito"]:checked', form).length;
       if (prop < 1) errors.proposito = L('Elige al menos un propósito (hasta 2).', 'Choose at least one purpose (up to 2).');
       if (prop > 2) errors.proposito = L('Elige máximo 2 opciones.', 'Choose up to 2 options.');
+      if (!picked(form, 'financiamiento')) errors.financiamiento = L('Elige cómo la vas a adquirir.', 'Choose how you will buy.');
+      if (!picked(form, 'plazo')) errors.plazo = L('Elige un plazo.', 'Choose a timeframe.');
+      if (!picked(form, 'canal')) errors.canal = L('Elige cómo prefieres que te contacte.', 'Choose how you prefer to be contacted.');
+      if (slotKind(form)) {
+        if (!picked(form, 'fecha')) errors.fecha = L('Elige un día.', 'Choose a day.');
+        if (!picked(form, 'hora')) errors.hora = L('Elige un horario.', 'Choose a time.');
+      }
     }
     $$('[data-err]', form).forEach(e => { e.textContent = errors[e.dataset.err] || ''; });
     ['nombre', 'telefono', 'email'].forEach(n => { const el = form.elements[n]; if (!el) return; if (errors[n]) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); });
-    ['recamaras', 'proposito', 'financiamiento', 'plazo', 'canal'].forEach(n => {
+    ['recamaras', 'proposito', 'financiamiento', 'plazo', 'canal', 'fecha', 'hora'].forEach(n => {
       const any = form.querySelector(`input[name="${n}"]`);
       if (any) any.closest('.chips').classList.toggle('is-invalid', !!errors[n]);
     });
     const first = Object.keys(errors)[0];
     if (first) {
       const target = form.querySelector(`[name="${first}"]`);
-      if (target) { target.focus({ preventScroll: true }); target.closest('.field').scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' }); }
+      if (target) {
+        target.focus({ preventScroll: true });
+        (target.closest('.field') || target).scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+      }
     }
     return !first;
+  }
+
+  const leadBase = (form, subject, tipo) => {
+    const { code, d } = phoneDigits(form);
+    return {
+      _subject: subject,
+      _template: 'table',
+      _captcha: 'false',
+      _replyto: fval(form, 'email'),
+      Tipo: tipo,
+      Nombre: fval(form, 'nombre'),
+      WhatsApp: `+${code} ${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`,
+      email: fval(form, 'email'),
+      Idioma: EN ? 'Inglés (USD)' : 'Español',
+      Origen_CTA: form.dataset.origin || (form.dataset.leadForm === 'gate' ? 'material' : 'formulario')
+    };
+  };
+  const stamp = () => Object.assign({ Pagina: location.origin + location.pathname, Fecha: new Date().toLocaleString('es-MX', { timeZone: TZ }) }, utm);
+
+  // Punto único de envío de leads (aquí se conectará la base de datos).
+  async function sendLead(payload) {
+    try {
+      const res = await fetch(CONFIG.formEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) });
+      const json = await res.json().catch(() => ({}));
+      return res.ok && String(json.success) !== 'false';
+    } catch (err) { return false; }
+  }
+
+  // Paso 1 completado: Fran recibe el contacto aunque la persona no termine el paso 2.
+  function sendPartial(form) {
+    const base = leadBase(form, '', 'Contacto inicial (paso 1 de 2). Si completa el paso 2 te llega otro correo con su perfil completo.');
+    const key = [base.Nombre, base.WhatsApp, base.email].join('|');
+    if (form.dataset.partialKey === key) return;
+    form.dataset.partialKey = key;
+    base._subject = `Punta Pacífico · Nuevo contacto (paso 1 de 2) · ${base.Nombre}`;
+    sendLead(Object.assign(base, stamp())).then(ok => track('lead_paso1', { origen: base.Origen_CTA, ok }));
+  }
+
+  async function createZoom(form, ymd, hm) {
+    let timer = 0;
+    try {
+      const ctrl = new AbortController();
+      timer = setTimeout(() => ctrl.abort(), 15000);
+      const res = await fetch(CONFIG.zoomEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ nombre: fval(form, 'nombre'), fecha: ymd, hora: hm, lang: EN ? 'en' : 'es', _honey: fval(form, '_honey') }),
+        signal: ctrl.signal
+      });
+      const j = await res.json().catch(() => ({}));
+      return res.ok && /^https:\/\/([a-z0-9-]+\.)*zoom\.us\/[^\s"'<>]*$/i.test(j.join_url || '') ? j : null;
+    } catch (err) { return null; } finally { clearTimeout(timer); }
+  }
+
+  function calendarLinks({ title, ymd, hm, mins, details, where }) {
+    const start = tjToUTC(ymd, hm), end = new Date(start.getTime() + mins * 60000);
+    const z = dt => dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const google = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${z(start)}/${z(end)}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(where)}`;
+    const e = s => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+    const fold = line => { const ch = Array.from(line), out = []; for (let i = 0; i < ch.length; i += 60) out.push(ch.slice(i, i + 60).join('')); return out.join('\r\n '); };
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Punta Pacifico//Citas//ES', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+      `UID:${z(start)}-${Math.random().toString(36).slice(2, 10)}@puntapacifico.vercel.app`, `DTSTAMP:${z(new Date())}`,
+      `DTSTART:${z(start)}`, `DTEND:${z(end)}`, `SUMMARY:${e(title)}`, `DESCRIPTION:${e(details)}`, `LOCATION:${e(where)}`,
+      'BEGIN:VALARM', 'TRIGGER:-PT30M', 'ACTION:DISPLAY', `DESCRIPTION:${e(title)}`, 'END:VALARM',
+      'END:VEVENT', 'END:VCALENDAR'].map(fold).join('\r\n');
+    let icsUrl;
+    try { icsUrl = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' })); } catch (err) { icsUrl = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics); }
+    return { google, ics: icsUrl };
+  }
+
+  function confirmationText(first, sk, when, zoom) {
+    const lines = [L(`Hola ${first}, gracias por tu interés en Punta Pacífico.`, `Hi ${first}, thank you for your interest in Punta Pacífico.`), ''];
+    if (sk === 'zoom') {
+      lines.push(L(`Tu videollamada quedó agendada para el ${when} (hora de Ensenada).`, `Your video call is booked for ${when} (Ensenada time, Pacific).`));
+      if (zoom) {
+        lines.push(L(`Únete por Zoom: ${zoom.join_url}`, `Join on Zoom: ${zoom.join_url}`));
+        if (zoom.id) lines.push(`ID: ${zoom.id}${zoom.passcode ? L(' · Código: ', ' · Passcode: ') + zoom.passcode : ''}`);
+      } else {
+        lines.push(L('En breve te envío el enlace de Zoom por WhatsApp.', 'I will send you the Zoom link on WhatsApp shortly.'));
+      }
+    } else {
+      lines.push(L(`Te espero el ${when} en el punto de venta, en la zona norte de Ensenada.`, `I’ll see you on ${when} at the sales office in northern Ensenada.`));
+      lines.push(L(`Ubicación: ${CONFIG.mapsUrl}`, `Location: ${CONFIG.mapsUrl}`));
+    }
+    lines.push('', L('Si necesitas cambiar el horario, escríbeme por WhatsApp:', 'If you need to reschedule, message me on WhatsApp:'), `https://wa.me/${CONFIG.whatsapp}`, '', 'Fran Morishita', L('Asesor de ventas · Punta Pacífico', 'Sales advisor · Punta Pacífico'));
+    return lines.join('\n');
   }
 
   async function submitLead(e) {
     e.preventDefault();
     const form = e.currentTarget;
+    if (form.classList.contains('is-sending')) return;
     const status = $('.form__status', form);
     status.className = 'form__status';
     status.textContent = '';
     if (form.elements._honey && form.elements._honey.value) return;
-    if (!validate(form)) {
+    const kind = form.dataset.leadForm;
+
+    // Paso 1 → paso 2
+    if (kind === 'full' && form.dataset.step !== '2') {
+      if (!validate(form, 1)) {
+        status.textContent = L('Revisa tus datos para continuar.', 'Please check your details to continue.');
+        status.classList.add('is-err');
+        return;
+      }
+      sendPartial(form);
+      goStep(form, 2);
+      return;
+    }
+    if (!validate(form, kind === 'full' ? 2 : 1)) {
       status.textContent = L('Completa todas las preguntas para enviar.', 'Please answer every question to send.');
       status.classList.add('is-err');
       return;
     }
-    const kind = form.dataset.leadForm;
     const origin = form.dataset.origin || (kind === 'gate' ? 'material' : 'formulario');
-    const { code, d } = phoneDigits(form);
-    const val = n => String(form.elements[n].value || '').trim();
-    const pick = n => { const c = form.querySelector(`input[name="${n}"]:checked`); return c ? c.value : '—'; };
+    const name = fval(form, 'nombre');
+    const first = name.split(/\s+/)[0] || '';
     const material = form.dataset.material ? MATERIAL[form.dataset.material] : null;
 
-    const payload = {
-      _subject: kind === 'gate'
-        ? `Punta Pacífico · Solicitud de ${material ? material.name : 'material'} · ${val('nombre')}`
-        : `Punta Pacífico · Nuevo lead · ${val('nombre')} · ${origin}`,
-      _template: 'table',
-      _captcha: 'false',
-      _replyto: val('email'),
-      Tipo: kind === 'gate' ? `Material bloqueado: ${material ? material.name : ''}` : 'Formulario completo',
-      Idioma: EN ? 'Inglés (USD)' : 'Español',
-      Origen_CTA: origin,
-      Nombre: val('nombre'),
-      WhatsApp: `+${code} ${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`,
-      Email: val('email')
-    };
-    if (kind === 'full') {
-      Object.assign(payload, {
-        Recamaras: pick('recamaras'),
-        Proposito: $$('input[name="proposito"]:checked', form).map(c => c.value).join(' + '),
-        Como_adquiere: pick('financiamiento'),
-        Plazo: pick('plazo'),
-        Canal_preferido: pick('canal'),
-        Interes_boton: form.dataset.interes || '—'
-      });
-    }
-    Object.assign(payload, { Pagina: location.origin + location.pathname, Fecha: new Date().toLocaleString('es-MX', { timeZone: 'America/Tijuana' }) }, utm);
-
-    form.classList.add('is-sending');
-    status.textContent = L('Enviando…', 'Sending…');
-    let ok = false;
-    try {
-      const res = await fetch(CONFIG.formEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) });
-      const json = await res.json().catch(() => ({}));
-      ok = res.ok && String(json.success) !== 'false';
-    } catch (err) { ok = false; }
-    track('lead_submit', { origen: origin, tipo: kind, ok });
-
     if (kind === 'gate') {
-      // Se abre WhatsApp con la solicitud; Fran envía el material manualmente.
-      const msg = material ? material.msg : MATERIAL.brochure.msg;
-      const url = wa(msg);
-      form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>${L('¡Listo', 'All set')}, ${esc(val('nombre').split(/\s+/)[0] || '')}!</h4>
+      // Se envía el lead y se abre WhatsApp con la solicitud; Fran envía el material manualmente.
+      const payload = Object.assign(leadBase(form, `Punta Pacífico · Solicitud de ${material ? material.name : 'material'} · ${name}`, `Material bloqueado: ${material ? material.name : ''}`), stamp());
+      form.classList.add('is-sending');
+      status.textContent = L('Enviando…', 'Sending…');
+      const ok = await sendLead(payload);
+      track('lead_submit', { origen: origin, tipo: kind, ok });
+      const url = wa(material ? material.msg : MATERIAL.brochure.msg);
+      form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>${L('¡Listo', 'All set')}, ${esc(first)}!</h4>
         <p>${L('Te llevamos a WhatsApp para que Fran te envíe el', 'Taking you to WhatsApp so Fran can send you the')} ${esc(material ? material.name : 'material')}.</p>
         <a class="btn btn--wa btn--lg" href="${url}" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> ${L('Abrir WhatsApp', 'Open WhatsApp')}</a></div>`;
       setTimeout(() => { window.location.href = url; }, 900);
       return;
     }
 
+    // Paso 2: perfil completo y, si aplica, cita
+    const canal = picked(form, 'canal');
+    const sk = slotKind(form);
+    const ymd = sk ? picked(form, 'fecha') : '';
+    const hm = sk ? picked(form, 'hora') : '';
+    form.classList.add('is-sending');
+    let zoom = null;
+    if (sk === 'zoom') {
+      status.textContent = L('Creando tu videollamada de Zoom…', 'Creating your Zoom call…');
+      zoom = await createZoom(form, ymd, hm);
+    }
+    status.textContent = L('Enviando…', 'Sending…');
+
+    let subject = `Punta Pacífico · Lead completo · ${name} · ${origin}`;
+    if (sk === 'zoom') subject = `Punta Pacífico · Videollamada ${zoom ? 'por Zoom' : '(crear Zoom)'} · ${shortES(ymd, hm)} · ${name}`;
+    if (sk === 'visita') subject = `Punta Pacífico · Visita al punto de venta · ${shortES(ymd, hm)} · ${name}`;
+    const payload = leadBase(form, subject, sk ? 'Cita agendada desde la web (paso 2 de 2)' : 'Formulario completo (paso 2 de 2)');
+    Object.assign(payload, {
+      Recamaras: picked(form, 'recamaras'),
+      Proposito: $$('input[name="proposito"]:checked', form).map(c => c.value).join(' + '),
+      Como_adquiere: picked(form, 'financiamiento'),
+      Plazo: picked(form, 'plazo'),
+      Canal_preferido: canal,
+      Interes_boton: form.dataset.interes || '—'
+    });
+    if (sk) payload.Cita = `${whenES(ymd, hm)} (hora de Ensenada)`;
+    if (sk === 'zoom') {
+      payload.Zoom = zoom ? zoom.join_url : 'No se pudo crear automáticamente: crea la reunión en Zoom y envíale el enlace por WhatsApp.';
+      if (zoom && zoom.id) payload.Zoom_ID = String(zoom.id);
+      if (zoom && zoom.passcode) payload.Zoom_codigo = String(zoom.passcode);
+    }
+    if (sk === 'visita') payload.Lugar = `Punto de venta · ${CONFIG.mapsUrl}`;
+    const when = sk ? longWhen(ymd, hm) : '';
+    if (sk) payload._autoresponse = confirmationText(first, sk, when, zoom);
+    Object.assign(payload, stamp());
+
+    const ok = await sendLead(payload);
+    track('lead_submit', { origen: origin, tipo: kind, canal, cita: sk || 'no', zoom: !!zoom, ok });
     form.classList.remove('is-sending');
-    if (!ok) {
+
+    if (!ok && !sk) {
       status.innerHTML = L(`No pudimos enviar tu solicitud. <a href="${waUrl}" target="_blank" rel="noopener">Escríbeme por WhatsApp</a> y te atiendo de inmediato.`, `We couldn't send your request. <a href="${waUrl}" target="_blank" rel="noopener">Message me on WhatsApp</a> and I'll help you right away.`);
       status.classList.add('is-err');
       return;
     }
-    const first = val('nombre').split(/\s+/)[0] || '';
-    form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>${L('¡Gracias', 'Thank you')}, ${esc(first)}!</h4>
-      <p>${L('Recibí tus datos. Te contacto en breve por', 'I got your details. I will contact you shortly by')} ${esc(payload.Canal_preferido || 'WhatsApp')}.</p>
-      <a class="btn btn--wa btn--lg" href="${waUrl}" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> ${L('Adelantar por WhatsApp', 'Chat on WhatsApp now')}</a></div>`;
+
+    const waConfirm = wa(sk
+      ? L(`Hola Fran, soy ${name}. Agendé ${sk === 'zoom' ? 'una videollamada' : 'una visita'} desde la web para el ${when}.`, `Hi Fran, I'm ${name}. I booked ${sk === 'zoom' ? 'a video call' : 'a visit'} on the website for ${when}.`)
+      : CONFIG.waText);
+    let body = '';
+    if (sk) {
+      const title = sk === 'zoom' ? L('Videollamada con Fran · Punta Pacífico', 'Video call with Fran · Punta Pacífico') : L('Visita a Punta Pacífico con Fran', 'Punta Pacífico visit with Fran');
+      const where = sk === 'zoom' ? (zoom ? zoom.join_url : 'Zoom') : L('Punto de venta Punta Pacífico, zona norte de Ensenada', 'Punta Pacífico sales office, northern Ensenada');
+      const details = [sk === 'zoom' ? (zoom ? L(`Únete por Zoom: ${zoom.join_url}`, `Join on Zoom: ${zoom.join_url}`) : L('Fran te enviará el enlace de Zoom por WhatsApp.', 'Fran will send you the Zoom link on WhatsApp.')) : L(`Ubicación: ${CONFIG.mapsUrl}`, `Location: ${CONFIG.mapsUrl}`), `WhatsApp: https://wa.me/${CONFIG.whatsapp}`].join('\n');
+      const cal = calendarLinks({ title, ymd, hm, mins: sk === 'zoom' ? 30 : 60, details, where });
+      body += `<p>${sk === 'zoom' ? L('Tu videollamada quedó agendada:', 'Your video call is booked:') : L('Te espero en el punto de venta:', 'See you at the sales office:')}<span class="thanks__when">${esc(when)}</span><span class="thanks__tz">${L('Hora de Ensenada', 'Ensenada time · Pacific')}</span></p>`;
+      if (sk === 'zoom' && zoom) body += `<a class="btn btn--navy btn--lg" href="${esc(zoom.join_url)}" target="_blank" rel="noopener">${L('Unirme por Zoom', 'Join on Zoom')}</a>`;
+      if (sk === 'zoom' && !zoom) body += `<p class="thanks__small">${L('En breve te envío el enlace de Zoom por WhatsApp.', 'I’ll send you the Zoom link on WhatsApp shortly.')}</p>`;
+      if (sk === 'visita') body += `<a class="btn btn--navy btn--lg" href="${esc(CONFIG.mapsUrl)}" target="_blank" rel="noopener">${L('Cómo llegar', 'Get directions')}</a>`;
+      body += `<p class="thanks__small">${L('Guárdala en tu calendario:', 'Save it to your calendar:')}</p><div class="thanks__cal"><a href="${esc(cal.google)}" target="_blank" rel="noopener">Google Calendar</a><a href="${esc(cal.ics)}" download="cita-punta-pacifico.ics">Apple / Outlook</a></div>`;
+    } else {
+      body += `<p>${L('Recibí tus datos. Te contacto en breve por', 'I got your details. I will contact you shortly by')} ${esc(canal || 'WhatsApp')}.</p>`;
+    }
+    body += `<a class="btn btn--wa btn--lg" href="${esc(waConfirm)}" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> ${sk ? L('Confirmar por WhatsApp', 'Confirm on WhatsApp') : L('Adelantar por WhatsApp', 'Chat on WhatsApp now')}</a>`;
+    if (!ok) body += `<p class="form__status is-err">${L('No pudimos avisarle a Fran por correo: confírmale tu cita por WhatsApp.', 'We couldn’t notify Fran by email: please confirm your appointment on WhatsApp.')}</p>`;
+    form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>${sk ? L('¡Listo', 'All set') : L('¡Gracias', 'Thank you')}, ${esc(first)}!</h4>${body}</div>`;
+    form.dataset.done = '1';
+    const box = form.closest('.modal__box');
+    if (box) box.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    else form.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
   }
 
   const mainHost = $('[data-form-host="main"]');
@@ -548,13 +788,13 @@
   const modal = $('[data-modal]');
   const modalHost = $('[data-form-host="modal"]', modal);
   const COPY = EN ? {
-    visita: { t: 'Book your visit', s: 'Answer these questions and I will confirm the day and time.', b: 'Book my visit' },
+    visita: { t: 'Book your appointment', s: 'Leave your details and pick the day and time that work for you.', b: 'Book an appointment' },
     recorrido: { t: 'Book a tour', s: 'See the site, the sales office and northern Ensenada.', b: 'Book a tour' },
     'cotizar-2r': { t: 'Get a quote · 2BR model', s: 'I will send availability, current price and payment plan.', b: 'Get my quote' },
     'cotizar-3r': { t: 'Get a quote · 3BR model', s: 'I will send availability, current price and payment plan.', b: 'Get my quote' },
     apartar: { t: 'Reserve your home', s: 'I will share the reservation amount and the homes available this week.', b: 'Reserve now' }
   } : {
-    visita: { t: 'Agenda tu visita', s: 'Contesta estas preguntas y te confirmo día y hora.', b: 'Agendar mi visita' },
+    visita: { t: 'Agenda tu cita', s: 'Déjame tus datos y elige el día y la hora que te acomoden.', b: 'Agenda tu cita' },
     recorrido: { t: 'Agenda un recorrido', s: 'Conoce el terreno, el punto de venta y la zona norte de Ensenada.', b: 'Agendar recorrido' },
     'cotizar-2r': { t: 'Cotiza el prototipo 2R', s: 'Te envío disponibilidad, precio vigente y corrida de pagos.', b: 'Recibir cotización' },
     'cotizar-3r': { t: 'Cotiza el prototipo 3R', s: 'Te envío disponibilidad, precio vigente y corrida de pagos.', b: 'Recibir cotización' },
