@@ -668,13 +668,13 @@
             <div class="locked__badge" aria-hidden="true"><svg class="ico"><use href="#i-lock"/></svg></div>
             <h3 class="form__title">Get it on WhatsApp</h3>
             <p class="form__sub">Fran sends you the PDF and answers your questions about the numbers.</p>
-            <div class="field"><label for="g-nombre">Full name</label><input id="g-nombre" name="nombre" autocomplete="name" required placeholder="Your name"><small class="err" data-err="nombre"></small></div>
+            <div class="field"><label for="g-nombre">Full name</label><input id="g-nombre" name="nombre" maxlength="80" autocomplete="name" required placeholder="Your name"><small class="err" data-err="nombre"></small></div>
             <div class="field">
               <label for="g-tel">WhatsApp or mobile</label>
-              <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input id="g-tel" name="telefono" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="+1 619 000 0000"></div>
+              <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input id="g-tel" name="telefono" maxlength="20" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="+1 619 000 0000"></div>
               <small class="err" data-err="telefono"></small>
             </div>
-            <div class="field"><label for="g-email">Email</label><input id="g-email" name="email" type="email" autocomplete="email" required placeholder="you@email.com"><small class="err" data-err="email"></small></div>
+            <div class="field"><label for="g-email">Email</label><input id="g-email" name="email" maxlength="120" type="email" autocomplete="email" required placeholder="you@email.com"><small class="err" data-err="email"></small></div>
             <input type="text" name="_honey" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
             <button class="btn btn--navy btn--lg btn--block" type="submit"><span data-gate-btn>Send me the analysis</span><svg class="ico ico--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
             <p class="form__legal">Submitting opens WhatsApp with your request for Fran. Your details are only used to follow up with you.</p>
@@ -792,13 +792,13 @@
     <form class="form" data-lead-form="full" novalidate>
       <h3 class="form__title" data-full-title>Request your proposal</h3>
       <div class="form__progress" aria-hidden="true"><span><i data-fp-bar></i></span><b data-fp-text>0 of 8</b></div>
-      <div class="field"><label>Full name</label><input name="nombre" autocomplete="name" required placeholder="Your name"><small class="err" data-err="nombre"></small></div>
+      <div class="field"><label>Full name</label><input name="nombre" maxlength="80" autocomplete="name" required placeholder="Your name"><small class="err" data-err="nombre"></small></div>
       <div class="field">
         <label>WhatsApp or mobile</label>
-        <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input name="telefono" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="+1 619 000 0000"></div>
+        <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input name="telefono" maxlength="20" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="+1 619 000 0000"></div>
         <small class="err" data-err="telefono"></small>
       </div>
-      <div class="field"><label>Email</label><input name="email" type="email" autocomplete="email" required placeholder="you@email.com"><small class="err" data-err="email"></small></div>
+      <div class="field"><label>Email</label><input name="email" maxlength="120" type="email" autocomplete="email" required placeholder="you@email.com"><small class="err" data-err="email"></small></div>
       <fieldset class="field">
         <legend>Looking for 2 or 3 bedrooms?</legend>
         <div class="chips">
@@ -855,13 +855,13 @@
   <!-- Plantilla: formulario bloqueado (brochure / análisis) -->
   <template id="tpl-gate">
     <form class="form" data-lead-form="gate" novalidate>
-      <div class="field"><label>Full name</label><input name="nombre" autocomplete="name" required placeholder="Your name"><small class="err" data-err="nombre"></small></div>
+      <div class="field"><label>Full name</label><input name="nombre" maxlength="80" autocomplete="name" required placeholder="Your name"><small class="err" data-err="nombre"></small></div>
       <div class="field">
         <label>WhatsApp or mobile</label>
-        <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input name="telefono" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="+1 619 000 0000"></div>
+        <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input name="telefono" maxlength="20" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="+1 619 000 0000"></div>
         <small class="err" data-err="telefono"></small>
       </div>
-      <div class="field"><label>Email</label><input name="email" type="email" autocomplete="email" required placeholder="you@email.com"><small class="err" data-err="email"></small></div>
+      <div class="field"><label>Email</label><input name="email" maxlength="120" type="email" autocomplete="email" required placeholder="you@email.com"><small class="err" data-err="email"></small></div>
       <input type="text" name="_honey" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
       <button class="btn btn--navy btn--lg btn--block" type="submit"><span data-gate-btn>Send me the brochure</span><svg class="ico ico--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
       <p class="form__legal">Submitting opens WhatsApp with your request for Fran.</p>
