@@ -2,14 +2,22 @@
 (() => {
   'use strict';
 
+  const EN = (document.documentElement.lang || '').startsWith('en');
+  const L = (es, en) => (EN ? en : es);
+  const FX = 18; // MXN por USD (aproximado) para la versión en inglés
   const CONFIG = {
     whatsapp: '526462563006',
-    waText: 'Hola Fran, vi la web de Punta Pacífico y me interesa comprar una casa',
+    waText: L('Hola Fran, vi la web de Punta Pacífico y me interesa comprar una casa', "Hi Fran, I saw the Punta Pacífico website and I'm interested in buying a home"),
     formEndpoint: 'https://formsubmit.co/ajax/fmejiam@sisol.com.mx'
   };
-  const MATERIAL = {
-    brochure: { name: 'brochure', title: 'Recibe el brochure', sub: 'Precios, plantas, amenidades y condiciones · noviembre 2026. Fran te lo envía por WhatsApp.', btn: 'Enviarme el brochure' },
-    roi: { name: 'análisis de rentabilidad (ROI)', title: 'Recibe el análisis de rentabilidad', sub: 'Plusvalía, renta de estancia corta y años de recuperación. Fran te lo envía en PDF.', btn: 'Enviarme el análisis' }
+  const MATERIAL = EN ? {
+    brochure: { name: 'brochure', title: 'Get the brochure', sub: 'Prices, floor plans, amenities and terms · November 2026. Fran sends it to you on WhatsApp.', btn: 'Send me the brochure', msg: "Hi, I filled out the form on the Punta Pacífico website and I'd like to get the brochure." },
+    roi: { name: 'ROI analysis', title: 'Get the ROI analysis', sub: 'Appreciation, short-term rental income and payback years. Fran sends it to you as a PDF.', btn: 'Send me the analysis', msg: "Hi, I filled out the form on the Punta Pacífico website and I'd like to get the ROI analysis." },
+    promo: { name: 'included-equipment promotion', title: 'Wait! Up to $25,000 USD included', sub: 'Leave your details and Fran will hold the included-equipment promotion for you.', btn: 'Claim my promotion', msg: "Hi, I filled out the form on the Punta Pacífico website and I'm interested in the included-equipment promotion." }
+  } : {
+    brochure: { name: 'brochure', title: 'Recibe el brochure', sub: 'Precios, plantas, amenidades y condiciones · noviembre 2026. Fran te lo envía por WhatsApp.', btn: 'Enviarme el brochure', msg: 'Hola, llené el formulario de la web de Punta Pacífico, me interesa obtener el brochure.' },
+    roi: { name: 'análisis de rentabilidad (ROI)', title: 'Recibe el análisis de rentabilidad', sub: 'Plusvalía, renta de estancia corta y años de recuperación. Fran te lo envía en PDF.', btn: 'Enviarme el análisis', msg: 'Hola, llené el formulario de la web de Punta Pacífico, me interesa obtener el análisis de rentabilidad (ROI).' },
+    promo: { name: 'promoción de equipamiento incluido', title: '¡Espera! Hasta $450,000 incluidos', sub: 'Déjame tus datos y te aparto la promoción de equipamiento incluido.', btn: 'Quiero mi promoción', msg: 'Hola, llené el formulario de la web de Punta Pacífico, me interesa la promoción de equipamiento incluido.' }
   };
 
   const root = document.documentElement;
@@ -67,7 +75,7 @@
   const mnav = $('[data-mnav]');
   const toggleMenu = (open) => {
     burger.setAttribute('aria-expanded', String(open));
-    burger.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+    burger.setAttribute('aria-label', open ? L('Cerrar menú', 'Close menu') : L('Abrir menú', 'Open menu'));
     mnav.hidden = !open;
     document.body.style.overflow = open ? 'hidden' : '';
   };
@@ -299,10 +307,11 @@
     $('.chart__area', svg).setAttribute('d', path(S.opt) + ` L${x(3)},${H - PAD.b} L${x(0)},${H - PAD.b} Z`);
     $('.chart__dots', svg).innerHTML = S.cons.map((v, i) => `<circle class="c" r="5" cx="${x(i)}" cy="${y(v)}"/>` + (i ? `<circle class="o" r="5" cx="${x(i)}" cy="${y(S.opt[i])}"/>` : '')).join('');
     const pct = (px, py) => `left:${px / W * 100}%;top:${py / H * 100}%`;
-    let tips = `<span class="chart__tip chart__tip--b" style="${pct(0, y(4.57))}">$4.57 M</span>`;
+    const lab = v => EN ? `$${Math.round(v * 1e6 / FX / 1000)}K` : `$${v.toFixed(2)} M`;
+    let tips = `<span class="chart__tip chart__tip--b" style="${pct(0, y(4.57))}">${lab(4.57)}</span>`;
     for (let i = 1; i < 4; i++) {
-      tips += `<span class="chart__tip chart__tip--o" style="${pct(x(i), y(S.opt[i]))};transition-delay:${(1.5 + i * .15).toFixed(2)}s">$${S.opt[i].toFixed(2)} M</span>`;
-      tips += `<span class="chart__tip chart__tip--c" style="${pct(x(i), y(S.cons[i]))};transition-delay:${(1.6 + i * .15).toFixed(2)}s">$${S.cons[i].toFixed(2)} M</span>`;
+      tips += `<span class="chart__tip chart__tip--o" style="${pct(x(i), y(S.opt[i]))};transition-delay:${(1.5 + i * .15).toFixed(2)}s">${lab(S.opt[i])}</span>`;
+      tips += `<span class="chart__tip chart__tip--c" style="${pct(x(i), y(S.cons[i]))};transition-delay:${(1.6 + i * .15).toFixed(2)}s">${lab(S.cons[i])}</span>`;
     }
     chart.insertAdjacentHTML('beforeend', tips);
   }
@@ -340,8 +349,9 @@
     if (box) { box.classList.remove('bump'); void box.offsetWidth; box.classList.add('bump'); }
   };
   const setPrice = (p) => {
-    $$('[data-pay]').forEach(el => tweenMoney(el, PAY[el.dataset.pay](p)));
-    $$('[data-cash]').forEach(el => tweenMoney(el, CASH[el.dataset.cash](p)));
+    const cur = v => (EN ? Math.round(v / FX) : v);
+    $$('[data-pay]').forEach(el => tweenMoney(el, cur(PAY[el.dataset.pay](p))));
+    $$('[data-cash]').forEach(el => tweenMoney(el, cur(CASH[el.dataset.cash](p))));
   };
   $$('.pay .seg button').forEach(b => b.addEventListener('click', () => {
     $$('.pay .seg button').forEach(o => { const on = o === b; o.classList.toggle('is-on', on); o.setAttribute('aria-checked', String(on)); });
@@ -384,7 +394,7 @@
       !!form.querySelector('input[name="canal"]:checked')
     ].filter(Boolean).length;
     $('[data-fp-bar]', box).style.width = (done / 8 * 100) + '%';
-    $('[data-fp-text]', box).textContent = done === 8 ? '¡Listo para enviar!' : `${done} de 8`;
+    $('[data-fp-text]', box).textContent = done === 8 ? L('¡Listo para enviar!', 'Ready to send!') : `${done} ${L('de', 'of')} 8`;
     box.classList.toggle('is-done', done === 8);
   }
 
@@ -413,16 +423,16 @@
   function validate(form) {
     const errors = {};
     const v = n => (form.elements[n] ? String(form.elements[n].value || '').trim() : '');
-    if (v('nombre').length < 3) errors.nombre = 'Escribe tu nombre completo.';
-    if (phoneDigits(form).d.length !== 10) errors.telefono = 'Escribe tu número a 10 dígitos.';
-    if (!emailOk(v('email'))) errors.email = 'Escribe un correo válido.';
+    if (v('nombre').length < 3) errors.nombre = L('Escribe tu nombre completo.', 'Enter your full name.');
+    if (phoneDigits(form).d.length !== 10) errors.telefono = L('Escribe tu número a 10 dígitos.', 'Enter your 10-digit number.');
+    if (!emailOk(v('email'))) errors.email = L('Escribe un correo válido.', 'Enter a valid email.');
     if (form.dataset.leadForm === 'full') {
-      [['recamaras', 'Elige 2 o 3 recámaras.'], ['financiamiento', 'Elige cómo la vas a adquirir.'], ['plazo', 'Elige un plazo.'], ['canal', 'Elige cómo prefieres que te contacte.']].forEach(([n, msg]) => {
+      [['recamaras', L('Elige 2 o 3 recámaras.', 'Choose 2 or 3 bedrooms.')], ['financiamiento', L('Elige cómo la vas a adquirir.', 'Choose how you will buy.')], ['plazo', L('Elige un plazo.', 'Choose a timeframe.')], ['canal', L('Elige cómo prefieres que te contacte.', 'Choose how you prefer to be contacted.')]].forEach(([n, msg]) => {
         if (!form.querySelector(`input[name="${n}"]:checked`)) errors[n] = msg;
       });
       const prop = $$('input[name="proposito"]:checked', form).length;
-      if (prop < 1) errors.proposito = 'Elige al menos un propósito (hasta 2).';
-      if (prop > 2) errors.proposito = 'Elige máximo 2 opciones.';
+      if (prop < 1) errors.proposito = L('Elige al menos un propósito (hasta 2).', 'Choose at least one purpose (up to 2).');
+      if (prop > 2) errors.proposito = L('Elige máximo 2 opciones.', 'Choose up to 2 options.');
     }
     $$('[data-err]', form).forEach(e => { e.textContent = errors[e.dataset.err] || ''; });
     ['nombre', 'telefono', 'email'].forEach(n => { const el = form.elements[n]; if (!el) return; if (errors[n]) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); });
@@ -446,7 +456,7 @@
     status.textContent = '';
     if (form.elements._honey && form.elements._honey.value) return;
     if (!validate(form)) {
-      status.textContent = 'Completa todas las preguntas para enviar.';
+      status.textContent = L('Completa todas las preguntas para enviar.', 'Please answer every question to send.');
       status.classList.add('is-err');
       return;
     }
@@ -465,6 +475,7 @@
       _captcha: 'false',
       _replyto: val('email'),
       Tipo: kind === 'gate' ? `Material bloqueado: ${material ? material.name : ''}` : 'Formulario completo',
+      Idioma: EN ? 'Inglés (USD)' : 'Español',
       Origen_CTA: origin,
       Nombre: val('nombre'),
       WhatsApp: `+${code} ${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`,
@@ -483,7 +494,7 @@
     Object.assign(payload, { Pagina: location.origin + location.pathname, Fecha: new Date().toLocaleString('es-MX', { timeZone: 'America/Tijuana' }) }, utm);
 
     form.classList.add('is-sending');
-    status.textContent = 'Enviando…';
+    status.textContent = L('Enviando…', 'Sending…');
     let ok = false;
     try {
       const res = await fetch(CONFIG.formEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) });
@@ -494,25 +505,25 @@
 
     if (kind === 'gate') {
       // Se abre WhatsApp con la solicitud; Fran envía el material manualmente.
-      const msg = `Hola, llené el formulario de la web de Punta Pacífico, me interesa obtener el ${material ? material.name : 'brochure'}.`;
+      const msg = material ? material.msg : MATERIAL.brochure.msg;
       const url = wa(msg);
-      form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>¡Listo, ${esc(val('nombre').split(/\s+/)[0] || '')}!</h4>
-        <p>Te llevamos a WhatsApp para que Fran te envíe el ${esc(material ? material.name : 'material')}.</p>
-        <a class="btn btn--wa btn--lg" href="${url}" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Abrir WhatsApp</a></div>`;
+      form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>${L('¡Listo', 'All set')}, ${esc(val('nombre').split(/\s+/)[0] || '')}!</h4>
+        <p>${L('Te llevamos a WhatsApp para que Fran te envíe el', 'Taking you to WhatsApp so Fran can send you the')} ${esc(material ? material.name : 'material')}.</p>
+        <a class="btn btn--wa btn--lg" href="${url}" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> ${L('Abrir WhatsApp', 'Open WhatsApp')}</a></div>`;
       setTimeout(() => { window.location.href = url; }, 900);
       return;
     }
 
     form.classList.remove('is-sending');
     if (!ok) {
-      status.innerHTML = `No pudimos enviar tu solicitud. <a href="${waUrl}" target="_blank" rel="noopener">Escríbeme por WhatsApp</a> y te atiendo de inmediato.`;
+      status.innerHTML = L(`No pudimos enviar tu solicitud. <a href="${waUrl}" target="_blank" rel="noopener">Escríbeme por WhatsApp</a> y te atiendo de inmediato.`, `We couldn't send your request. <a href="${waUrl}" target="_blank" rel="noopener">Message me on WhatsApp</a> and I'll help you right away.`);
       status.classList.add('is-err');
       return;
     }
     const first = val('nombre').split(/\s+/)[0] || '';
-    form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>¡Gracias, ${esc(first)}!</h4>
-      <p>Recibí tus datos. Te contacto en breve por ${esc(payload.Canal_preferido || 'WhatsApp')}.</p>
-      <a class="btn btn--wa btn--lg" href="${waUrl}" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> Adelantar por WhatsApp</a></div>`;
+    form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>${L('¡Gracias', 'Thank you')}, ${esc(first)}!</h4>
+      <p>${L('Recibí tus datos. Te contacto en breve por', 'I got your details. I will contact you shortly by')} ${esc(payload.Canal_preferido || 'WhatsApp')}.</p>
+      <a class="btn btn--wa btn--lg" href="${waUrl}" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> ${L('Adelantar por WhatsApp', 'Chat on WhatsApp now')}</a></div>`;
   }
 
   const mainHost = $('[data-form-host="main"]');
@@ -530,7 +541,13 @@
   /* ---------- Modal ---------- */
   const modal = $('[data-modal]');
   const modalHost = $('[data-form-host="modal"]', modal);
-  const COPY = {
+  const COPY = EN ? {
+    visita: { t: 'Book your visit', s: 'Answer these questions and I will confirm the day and time.', b: 'Book my visit' },
+    recorrido: { t: 'Book a tour', s: 'See the site, the sales office and northern Ensenada.', b: 'Book a tour' },
+    'cotizar-2r': { t: 'Get a quote · 2BR model', s: 'I will send availability, current price and payment plan.', b: 'Get my quote' },
+    'cotizar-3r': { t: 'Get a quote · 3BR model', s: 'I will send availability, current price and payment plan.', b: 'Get my quote' },
+    apartar: { t: 'Reserve your home', s: 'I will share the reservation amount and the homes available this week.', b: 'Reserve now' }
+  } : {
     visita: { t: 'Agenda tu visita', s: 'Contesta estas preguntas y te confirmo día y hora.', b: 'Agendar mi visita' },
     recorrido: { t: 'Agenda un recorrido', s: 'Conoce el terreno, el punto de venta y la zona norte de Ensenada.', b: 'Agendar recorrido' },
     'cotizar-2r': { t: 'Cotiza el prototipo 2R', s: 'Te envío disponibilidad, precio vigente y corrida de pagos.', b: 'Recibir cotización' },
@@ -619,6 +636,37 @@
 
   const fab = $('.fab');
   if (fab) setTimeout(() => { fab.classList.add('show-tip'); setTimeout(() => fab.classList.remove('show-tip'), 5000); }, 9000);
+
+  /* ---------- Pop-up de salida: promoción de equipamiento incluido ---------- */
+  const promoHTML = EN
+    ? `<div class="promo"><p class="promo__big">Up to <b>$25,000 USD</b> in equipment included in the price</p><ul class="checks checks--sm"><li>Kitchen with granite bar, stove, oven and hood</li><li>Mini-split A/C and closets</li><li>Smart home: digital lock, lights and climate from your phone</li><li>Roof with half bath, bar with sink, grill and pergola</li></ul></div>`
+    : `<div class="promo"><p class="promo__big">Ahorra hasta <b>$450,000</b> en equipamiento incluido en el precio</p><ul class="checks checks--sm"><li>Cocina con barra de granito, estufa con horno y campana</li><li>Minisplits y clósets</li><li>Smart home: cerradura digital, luces y clima desde tu celular</li><li>Roof con medio baño, barra con tarja, asador y pérgola</li></ul></div>`;
+  let promoShown = false;
+  try { promoShown = sessionStorage.getItem('pp_promo') === '1'; } catch (e) { /* noop */ }
+  const t0 = Date.now();
+  const showPromo = () => {
+    if (promoShown || !modal.hidden || Date.now() - t0 < 6000) return;
+    promoShown = true;
+    try { sessionStorage.setItem('pp_promo', '1'); } catch (e) { /* noop */ }
+    const m = MATERIAL.promo;
+    const form = mountForm(modalHost, tplGate);
+    form.dataset.origin = 'popup-salida';
+    form.dataset.material = 'promo';
+    $('[data-gate-btn]', form).textContent = m.btn;
+    form.insertAdjacentHTML('afterbegin', promoHTML);
+    openModal(m.title, m.sub);
+    track('exit_popup');
+  };
+  document.addEventListener('mouseout', e => { if (!e.relatedTarget && e.clientY <= 0) showPromo(); });
+  if (!finePointer) {
+    let lastY = window.scrollY, lastT = Date.now();
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY, now = Date.now();
+      const v = (lastY - y) / Math.max(1, now - lastT); // px/ms hacia arriba
+      if (v > 2.2 && y > window.innerHeight * 2 && now - t0 > 25000) showPromo();
+      lastY = y; lastT = now;
+    }, { passive: true });
+  }
 
   /* ---------- Carga: oculta el loader y arranca la entrada del hero ---------- */
   let started = false;
