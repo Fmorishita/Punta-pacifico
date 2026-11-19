@@ -240,7 +240,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .float-card small{display:block;font-size:13px;color:var(--muted)}
 .float-card .ico{width:30px;height:30px;color:#fff;background:var(--wa);border-radius:50%;padding:6px}
 .float-card--a{left:-28px;bottom:14%}
-.float-card--b{right:-26px;top:10%}
+.float-card--b{right:-26px;bottom:36%}
 @media (prefers-reduced-motion:no-preference){.float-card--a{animation:bob 6s ease-in-out infinite}.float-card--b{animation:bob 6s ease-in-out -3s infinite}}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 .live{position:relative;width:12px;height:12px;border-radius:50%;background:#22C55E;flex:none;animation:pulse 2s infinite}
@@ -667,8 +667,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .agent__copy>.cta-row{order:6}
   .contact__img{display:none}
   .float-card{padding:10px 12px}
-  .float-card--a{left:10px;bottom:6%}
-  .float-card--b{right:10px;top:4%}
+  .float-card--a{left:10px;bottom:calc(4% + 74px)}
+  .float-card--b{right:10px;bottom:4%}
   .route3{grid-template-columns:1fr}
   .route3 li{display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center}
   .route3__n{grid-row:span 2;margin:0}
@@ -781,3 +781,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .promo__big{font-family:var(--serif);font-size:22px;line-height:1.25;margin-bottom:12px}
 .promo__big b{color:var(--gold-2);font-weight:400}
 .promo .checks li{color:#D7E1E7}
+
+/* iOS: ocultar el boton de play nativo cuando el ahorro de bateria bloquea el autoplay */
+video::-webkit-media-controls-start-playback-button{display:none!important;-webkit-appearance:none}
+video::-webkit-media-controls{display:none!important}

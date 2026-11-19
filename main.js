@@ -106,6 +106,12 @@
   window.addEventListener('resize', () => {
     $$('video[data-lazy-video]').forEach(v => { if (getComputedStyle(v).display !== 'none') vio.observe(v); });
   });
+  // Ahorro de bateria (iOS) bloquea el autoplay: al primer toque/scroll arrancamos los videos visibles
+  const kick = () => $$('video').forEach(v => {
+    const r = v.getBoundingClientRect();
+    if (v.paused && r.bottom > 0 && r.top < innerHeight && getComputedStyle(v).display !== 'none') { const p = v.play(); if (p && p.catch) p.catch(() => {}); }
+  });
+  ['touchstart', 'pointerdown', 'scroll'].forEach(ev => addEventListener(ev, kick, { passive: true, once: ev !== 'scroll' }));
   $$('.hero video').forEach(v => new IntersectionObserver(([en]) => { en.isIntersecting ? v.play().catch(() => {}) : v.pause(); }).observe(v));
 
   /* ---------- Contadores ---------- */
