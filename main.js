@@ -13,13 +13,13 @@
     mapsUrl: 'https://maps.app.goo.gl/8SuSAerwhwJd1gkg9'
   };
   const MATERIAL = EN ? {
-    brochure: { name: 'brochure', title: 'Get the brochure', sub: 'Prices, floor plans, amenities and terms · November 2026. Fran sends it to you on WhatsApp.', btn: 'Send me the brochure', msg: "Hi, I filled out the form on the Punta Pacífico website and I'd like to get the brochure." },
-    roi: { name: 'ROI analysis', title: 'Get the ROI analysis', sub: 'Appreciation, short-term rental income and payback years. Fran sends it to you as a PDF.', btn: 'Send me the analysis', msg: "Hi, I filled out the form on the Punta Pacífico website and I'd like to get the ROI analysis." },
-    promo: { name: 'included-equipment promotion', title: 'Wait! Up to $25,000 USD included', sub: 'Leave your details and Fran will hold the included-equipment promotion for you.', btn: 'Claim my promotion', msg: "Hi, I filled out the form on the Punta Pacífico website and I'm interested in the included-equipment promotion." }
+    brochure: { name: 'brochure', title: 'Get the brochure', sub: 'Prices, floor plans, amenities and terms · November 2026. Get it by email or WhatsApp.', btn: 'Send me the brochure', msg: "Hi, I filled out the form on the Punta Pacífico website and I'd like to get the brochure." },
+    roi: { name: 'ROI analysis', title: 'Get the ROI analysis', sub: 'Appreciation, short-term rental income and payback years. Get the PDF by email or WhatsApp.', btn: 'Send me the analysis', msg: "Hi, I filled out the form on the Punta Pacífico website and I'd like to get the ROI analysis." },
+    promo: { name: 'included-equipment promotion', title: 'Wait! Don’t leave without this', sub: 'Leave your details and Fran will hold the included-equipment promotion for you.', btn: 'Claim my promotion', msg: "Hi, I filled out the form on the Punta Pacífico website and I'm interested in the included-equipment promotion." }
   } : {
-    brochure: { name: 'brochure', title: 'Recibe el brochure', sub: 'Precios, plantas, amenidades y condiciones · noviembre 2026. Fran te lo envía por WhatsApp.', btn: 'Enviarme el brochure', msg: 'Hola, llené el formulario de la web de Punta Pacífico, me interesa obtener el brochure.' },
-    roi: { name: 'análisis de rentabilidad (ROI)', title: 'Recibe el análisis de rentabilidad', sub: 'Plusvalía, renta de estancia corta y años de recuperación. Fran te lo envía en PDF.', btn: 'Enviarme el análisis', msg: 'Hola, llené el formulario de la web de Punta Pacífico, me interesa obtener el análisis de rentabilidad (ROI).' },
-    promo: { name: 'promoción de equipamiento incluido', title: '¡Espera! Hasta $450,000 incluidos', sub: 'Déjame tus datos y te aparto la promoción de equipamiento incluido.', btn: 'Quiero mi promoción', msg: 'Hola, llené el formulario de la web de Punta Pacífico, me interesa la promoción de equipamiento incluido.' }
+    brochure: { name: 'brochure', title: 'Recibe el brochure', sub: 'Precios, plantas, amenidades y condiciones · noviembre 2026. Recíbelo por email o WhatsApp.', btn: 'Enviarme el brochure', msg: 'Hola, llené el formulario de la web de Punta Pacífico, me interesa obtener el brochure.' },
+    roi: { name: 'análisis de rentabilidad (ROI)', title: 'Recibe el análisis de rentabilidad', sub: 'Plusvalía, renta de estancia corta y años de recuperación. Recíbelo en PDF por email o WhatsApp.', btn: 'Enviarme el análisis', msg: 'Hola, llené el formulario de la web de Punta Pacífico, me interesa obtener el análisis de rentabilidad (ROI).' },
+    promo: { name: 'promoción de equipamiento incluido', title: '¡Espera! No te vayas sin esto', sub: 'Déjame tus datos y te aparto la promoción de equipamiento incluido.', btn: 'Quiero mi promoción', msg: 'Hola, llené el formulario de la web de Punta Pacífico, me interesa la promoción de equipamiento incluido.' }
   };
 
   const root = document.documentElement;
@@ -228,9 +228,8 @@
     });
   });
 
-  /* ---------- Un día en Punta Pacífico: historia con video fijo ---------- */
-  const day = $('[data-day]');
-  if (day) {
+  /* ---------- Historias con video fijo (Así compras con Fran · Un día en Punta Pacífico) ---------- */
+  $$('[data-day]').forEach(day => {
     const steps = $$('.day__step', day);
     const cards = steps.map(s => $('.day__card', s));
     const vids = $$('.day__video', day);
@@ -276,7 +275,7 @@
       }
     }, { rootMargin: '300px 0px' }).observe(day);
     window.addEventListener('resize', onScroll);
-  }
+  });
 
   /* ---------- Roof: paralaje suave en escritorio ---------- */
   const roof = $('#roof');
@@ -582,6 +581,12 @@
       }
       progress(form);
     });
+    const legal = () => {
+      const via = picked(form, 'entrega');
+      if (via) $$('[data-legal]', form).forEach(el => { el.hidden = el.dataset.legal !== via; });
+    };
+    form.addEventListener('change', e => { if (e.target.name === 'entrega') { legal(); track('entrega', { via: e.target.value }); } });
+    legal();
     const back = $('[data-back]', form);
     if (back) back.addEventListener('click', () => goStep(form, 1));
     form.addEventListener('submit', submitLead);
@@ -695,6 +700,32 @@
     return { google, ics: icsUrl };
   }
 
+
+  /* ---------- Confeti al enviar: pequeña recompensa visual ---------- */
+  function confetti(anchor) {
+    if (reduce || !anchor || !anchor.getBoundingClientRect) return;
+    const r = anchor.getBoundingClientRect();
+    const x0 = r.left + r.width / 2, y0 = r.top + Math.min(r.height / 2, 120);
+    const colors = ['#D7AE6B', '#C49A5C', '#F3E3C3', '#25D366', '#123650', '#ffffff'];
+    const layer = document.createElement('div');
+    layer.className = 'confetti';
+    layer.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(layer);
+    for (let i = 0; i < 70; i++) {
+      const p = document.createElement('i');
+      const size = 6 + Math.random() * 7;
+      p.style.cssText = `left:${x0}px;top:${y0}px;width:${size}px;height:${size * (Math.random() < .5 ? 1 : .45)}px;background:${colors[i % colors.length]};border-radius:${Math.random() < .3 ? '50%' : '2px'}`;
+      layer.appendChild(p);
+      const a = Math.random() * Math.PI * 2, v = 120 + Math.random() * 260;
+      const dx = Math.cos(a) * v, dy = Math.sin(a) * v - 180;
+      p.animate([
+        { transform: 'translate(-50%,-50%) rotate(0deg)', opacity: 1 },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy + 420}px)) rotate(${(Math.random() - .5) * 900}deg)`, opacity: 0 }
+      ], { duration: 1300 + Math.random() * 900, easing: 'cubic-bezier(.15,.6,.35,1)', fill: 'forwards' });
+    }
+    setTimeout(() => layer.remove(), 2400);
+  }
+
   async function submitLead(e) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -727,17 +758,44 @@
     const material = form.dataset.material ? MATERIAL[form.dataset.material] : null;
 
     if (kind === 'gate') {
-      // Se envía el lead y se abre WhatsApp con la solicitud; Fran envía el material manualmente.
-      const payload = Object.assign(leadBase(form, `Punta Pacífico · Solicitud de ${material ? material.name : 'material'} · ${name}`, `Material bloqueado: ${material ? material.name : ''}`), stamp());
+      // Email: Fran recibe el aviso "ENVIAR POR EMAIL" y le manda el PDF a su correo.
+      // WhatsApp: se envía el lead y se abre WhatsApp con la solicitud.
+      const via = picked(form, 'entrega') || (EN ? 'email' : 'whatsapp');
+      const viaMail = via === 'email';
+      const mName = material ? material.name : 'material';
+      const email = fval(form, 'email');
+      const subject = viaMail
+        ? `Punta Pacífico · ENVIAR POR EMAIL: ${mName} · ${name} · ${email}`
+        : `Punta Pacífico · Solicitud de ${mName} · ${name}`;
+      const payload = Object.assign(leadBase(form, subject, `Material bloqueado: ${mName}`), stamp());
+      payload.Entrega = viaMail ? `Email: enviarle el PDF a ${email}` : 'WhatsApp';
       form.classList.add('is-sending');
       status.textContent = L('Enviando…', 'Sending…');
       const ok = await sendLead(payload);
-      track('lead_submit', { origen: origin, tipo: kind, ok });
+      track('lead_submit', { origen: origin, tipo: kind, entrega: via, ok });
       const url = wa(material ? material.msg : MATERIAL.brochure.msg);
+      if (viaMail) {
+        if (!ok) {
+          form.classList.remove('is-sending');
+          status.innerHTML = L(`No pudimos enviar tu solicitud. <a href="${url}" target="_blank" rel="noopener">Pídelo por WhatsApp</a> y te lo mando de inmediato.`, `We couldn't send your request. <a href="${url}" target="_blank" rel="noopener">Ask on WhatsApp</a> and I'll send it right away.`);
+          status.classList.add('is-err');
+          return;
+        }
+        const promo = form.dataset.material === 'promo';
+        form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>${L('¡Listo', 'All set')}, ${esc(first)}!</h4>
+          <p>${promo
+            ? L('Te aparto la promoción de equipamiento incluido. Fran te escribe hoy a', 'I’m holding the included-equipment promotion for you. Fran will email you today at')
+            : L(`Fran te envía el ${esc(mName)} hoy mismo a`, `Fran will email you the ${esc(mName)} today at`)} <b>${esc(email)}</b>.</p>
+          <p class="thanks__small">${L('Revisa tu bandeja de entrada y la carpeta de spam.', 'Check your inbox and your spam folder.')}</p>
+          <a class="btn btn--wa btn--lg" href="${url}" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> ${L('¿Lo quieres ya? Pídelo por WhatsApp', 'Want it now? Ask on WhatsApp')}</a></div>`;
+        confetti(form);
+        return;
+      }
       form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>${L('¡Listo', 'All set')}, ${esc(first)}!</h4>
-        <p>${L('Te llevamos a WhatsApp para que Fran te envíe el', 'Taking you to WhatsApp so Fran can send you the')} ${esc(material ? material.name : 'material')}.</p>
+        <p>${L('Te llevamos a WhatsApp para que Fran te envíe el', 'Taking you to WhatsApp so Fran can send you the')} ${esc(mName)}.</p>
         <a class="btn btn--wa btn--lg" href="${url}" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-wa"/></svg> ${L('Abrir WhatsApp', 'Open WhatsApp')}</a></div>`;
-      setTimeout(() => { window.location.href = url; }, 900);
+      confetti(form);
+      setTimeout(() => { window.location.href = url; }, 1200);
       return;
     }
 
@@ -807,6 +865,7 @@
     if (!ok) body += `<p class="form__status is-err">${L('No pudimos avisarle a Fran por correo: confírmale tu cita por WhatsApp.', 'We couldn’t notify Fran by email: please confirm your appointment on WhatsApp.')}</p>`;
     form.innerHTML = `<div class="thanks"><div class="thanks__ok">✓</div><h4>${sk ? L('¡Listo', 'All set') : L('¡Gracias', 'Thank you')}, ${esc(first)}!</h4>${body}</div>`;
     form.dataset.done = '1';
+    if (ok) confetti(form);
     const box = form.closest('.modal__box');
     if (box) box.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
     else form.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
@@ -924,9 +983,10 @@
   if (fab) setTimeout(() => { fab.classList.add('show-tip'); setTimeout(() => fab.classList.remove('show-tip'), 5000); }, 9000);
 
   /* ---------- Pop-up de salida: promoción de equipamiento incluido ---------- */
+  const promoPics = (a, b, c) => `<div class="promo__pics"><figure><img src="assets/img/v4/eq-cocinando.webp" alt="" width="480" height="600"><figcaption>${a}</figcaption></figure><figure><img src="assets/img/v4/eq-smart.webp" alt="" width="480" height="600"><figcaption>${b}</figcaption></figure><figure><img src="assets/img/v4/eq-cocina.webp" alt="" width="440" height="550"><figcaption>${c}</figcaption></figure></div>`;
   const promoHTML = EN
-    ? `<div class="promo"><p class="promo__big">Up to <b>$25,000 USD</b> in equipment included in the price</p><ul class="checks checks--sm"><li>Kitchen with granite bar, stove, oven and hood</li><li>Mini-split A/C and closets</li><li>Smart home: digital lock, lights and climate from your phone</li><li>Roof with half bath, bar with sink, grill and pergola</li></ul></div>`
-    : `<div class="promo"><p class="promo__big">Ahorra hasta <b>$450,000</b> en equipamiento incluido en el precio</p><ul class="checks checks--sm"><li>Cocina con barra de granito, estufa con horno y campana</li><li>Minisplits y clósets</li><li>Smart home: cerradura digital, luces y clima desde tu celular</li><li>Roof con medio baño, barra con tarja, asador y pérgola</li></ul></div>`;
+    ? `<div class="promo">${promoPics('Equipped kitchen', 'A/C from your phone', 'Move-in ready')}<p class="promo__big">Up to <b>$25,000 USD</b> in equipment included in the price</p><ul class="checks checks--sm"><li>Kitchen with granite bar, stove, oven and hood</li><li>Mini-split A/C and closets</li><li>Smart home: digital lock, lights and climate from your phone</li><li>Roof with half bath, bar with sink, grill and pergola</li></ul></div>`
+    : `<div class="promo">${promoPics('Cocina equipada', 'Clima desde tu celular', 'Lista para estrenar')}<p class="promo__big">Ahorra hasta <b>$450,000</b> en equipamiento incluido en el precio</p><ul class="checks checks--sm"><li>Cocina con barra de granito, estufa con horno y campana</li><li>Minisplits y clósets</li><li>Smart home: cerradura digital, luces y clima desde tu celular</li><li>Roof con medio baño, barra con tarja, asador y pérgola</li></ul></div>`;
   let promoShown = false;
   try { promoShown = sessionStorage.getItem('pp_promo') === '1'; } catch (e) { /* noop */ }
   const t0 = Date.now();
@@ -939,6 +999,7 @@
     const form = mountForm(modalHost, tplGate);
     form.dataset.origin = 'popup-salida';
     form.dataset.material = 'promo';
+    const dv = $('.deliver', form); if (dv) dv.hidden = true;
     $('[data-gate-btn]', form).textContent = m.btn;
     form.insertAdjacentHTML('afterbegin', promoHTML);
     openModal(m.title, m.sub);
