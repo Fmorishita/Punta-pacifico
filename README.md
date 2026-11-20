@@ -11,7 +11,7 @@ Landing page de una sola página para **Punta Pacífico · Oceanview Living Ense
   - **"Agenda tu cita" en 2 pasos** (visita, cotizar, apartar, contacto):
     1. Nombre, WhatsApp (+52/+1) y correo. Al continuar, Fran recibe un aviso *"Nuevo contacto (paso 1 de 2)"* para no perder a quien no termine.
     2. 2 o 3 recámaras, propósito (hasta 2), cómo adquiere, plazo y canal. Si elige **visita en físico** o **videollamada**, escoge día (próximos 7 días) y hora (10–13 h y 16–18 h, hora de Ensenada).
-    - Videollamada: se crea la reunión de Zoom automáticamente (ver abajo), el cliente ve el enlace, puede agregarla a Google Calendar / Apple / Outlook y le llega una confirmación por correo. Fran recibe el correo *"Videollamada por Zoom · día hora · nombre"* con el enlace.
+    - Videollamada: se crea la reunión de Zoom automáticamente (ver abajo), el cliente ve el enlace y puede agregarla a Google Calendar / Apple / Outlook. Fran recibe el correo *"Videollamada por Zoom · día hora · nombre"* con el enlace.
     - Si Zoom no está configurado o falla, el cliente ve "te envío el enlace por WhatsApp" y el correo a Fran dice *"(crear Zoom)"*.
   - **Material bloqueado** (brochure y análisis de rentabilidad): nombre, WhatsApp y correo; al enviar llega el correo y se abre WhatsApp con "Hola, llené el formulario de la web de Punta Pacífico, me interesa obtener el …".
 - Eventos `whatsapp_click`, `form_open`, `form_step`, `lead_paso1` y `lead_submit` van a `dataLayer` y a `fbq` si existen (listo para GTM / Meta Pixel).

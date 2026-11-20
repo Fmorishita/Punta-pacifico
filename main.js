@@ -636,24 +636,6 @@
     return { google, ics: icsUrl };
   }
 
-  function confirmationText(first, sk, when, zoom) {
-    const lines = [L(`Hola ${first}, gracias por tu interés en Punta Pacífico.`, `Hi ${first}, thank you for your interest in Punta Pacífico.`), ''];
-    if (sk === 'zoom') {
-      lines.push(L(`Tu videollamada quedó agendada para el ${when} (hora de Ensenada).`, `Your video call is booked for ${when} (Ensenada time, Pacific).`));
-      if (zoom) {
-        lines.push(L(`Únete por Zoom: ${zoom.join_url}`, `Join on Zoom: ${zoom.join_url}`));
-        if (zoom.id) lines.push(`ID: ${zoom.id}${zoom.passcode ? L(' · Código: ', ' · Passcode: ') + zoom.passcode : ''}`);
-      } else {
-        lines.push(L('En breve te envío el enlace de Zoom por WhatsApp.', 'I will send you the Zoom link on WhatsApp shortly.'));
-      }
-    } else {
-      lines.push(L(`Te espero el ${when} en el punto de venta, en la zona norte de Ensenada.`, `I’ll see you on ${when} at the sales office in northern Ensenada.`));
-      lines.push(L(`Ubicación: ${CONFIG.mapsUrl}`, `Location: ${CONFIG.mapsUrl}`));
-    }
-    lines.push('', L('Si necesitas cambiar el horario, escríbeme por WhatsApp:', 'If you need to reschedule, message me on WhatsApp:'), `https://wa.me/${CONFIG.whatsapp}`, '', 'Fran Morishita', L('Asesor de ventas · Punta Pacífico', 'Sales advisor · Punta Pacífico'));
-    return lines.join('\n');
-  }
-
   async function submitLead(e) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -733,7 +715,6 @@
     }
     if (sk === 'visita') payload.Lugar = `Punto de venta · ${CONFIG.mapsUrl}`;
     const when = sk ? longWhen(ymd, hm) : '';
-    if (sk) payload._autoresponse = confirmationText(first, sk, when, zoom);
     Object.assign(payload, stamp());
 
     const ok = await sendLead(payload);
