@@ -815,3 +815,77 @@ video::-webkit-media-controls{display:none!important}
 .thanks__cal a{display:inline-flex;align-items:center;min-height:42px;padding:0 16px;border-radius:999px;border:1px solid rgba(18,54,80,.22);color:var(--navy);font-size:14.5px;font-weight:500;text-decoration:none;transition:border-color .25s,background .25s}
 .thanks__cal a:hover{border-color:var(--navy);background:var(--paper)}
 .thanks__small{font-size:13.5px}
+
+/* ---------- v4 · Historias más cortas, video del acceso, envío por email, pop-up con fotos y botones con más vida ---------- */
+/* Historias al hacer scroll: cada paso ocupa menos pantalla para que la sección no se haga eterna */
+.day__step{min-height:58vh}
+.day__step:first-child{min-height:50vh}
+.day__ctas{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.day__ctas .btn{margin-top:0}
+.day--path{background:linear-gradient(180deg,var(--ink) 0%,#0D2638 100%)}
+.day--path .day__time{letter-spacing:.02em}
+@media (prefers-reduced-motion:no-preference){.day__step.is-on .day__card{animation:cardIn .7s var(--ease)}}
+@keyframes cardIn{from{opacity:.35;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+
+/* Asesor: la tarjeta de WhatsApp va arriba para no tapar la mano de Fran en la foto nueva */
+.float-card--b{bottom:auto;top:12%}
+
+/* Acceso controlado: video vertical del auto entrando por la caseta */
+.secure__clip{position:absolute;z-index:2;left:clamp(14px,2.4vw,32px);bottom:clamp(14px,2.4vw,32px);width:clamp(150px,15vw,230px);aspect-ratio:9/16;border-radius:22px;overflow:hidden;border:5px solid rgba(255,255,255,.92);box-shadow:0 30px 60px -20px rgba(0,0,0,.7);background:#0E2231}
+.secure__clip video{width:100%;height:100%;object-fit:cover;display:block}
+.secure__tag{position:absolute;left:10px;bottom:10px;display:inline-flex;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;background:rgba(10,31,46,.74);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;font-size:12px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
+.secure__tag i{width:7px;height:7px;border-radius:50%;background:#5BE38E;animation:pulse 2s infinite}
+
+/* Material: elegir si llega por email o por WhatsApp */
+.deliver .chips span{gap:8px;padding:0 18px}
+.deliver .chips .ico{width:18px;height:18px;flex:none}
+.deliver .chips input:checked+span .ico{color:var(--gold-2)}
+.deliver[hidden]{display:none}
+
+/* Pop-up de salida: fotos del equipamiento */
+.promo__pics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 16px}
+.promo__pics figure{position:relative;margin:0;border-radius:12px;overflow:hidden;aspect-ratio:4/5;background:#14293a}
+.promo__pics img{width:100%;height:100%;object-fit:cover;display:block}
+.promo__pics figcaption{position:absolute;left:6px;right:6px;bottom:6px;padding:5px 6px;border-radius:8px;background:rgba(10,31,46,.76);font-size:11px;line-height:1.2;font-weight:600;text-align:center;color:#fff}
+@media (prefers-reduced-motion:no-preference){
+  .promo__pics figure{animation:picIn .7s var(--ease) both}
+  .promo__pics figure:nth-child(2){animation-delay:.12s}
+  .promo__pics figure:nth-child(3){animation-delay:.24s}
+}
+@keyframes picIn{from{opacity:0;transform:translateY(12px) scale(.95)}to{opacity:1;transform:none}}
+
+/* Confeti al enviar un formulario */
+.confetti{position:fixed;inset:0;z-index:300;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;display:block;will-change:transform,opacity}
+
+/* Botones que brillan y se mueven para llamar la atención */
+@media (prefers-reduced-motion:no-preference){
+  .btn--gold::before,.btn--wa::before,.btn--navy::before{animation-duration:3.6s}
+  .btn--glow{animation:glow 2.6s ease-in-out infinite}
+  .btn--glow.btn--pop{animation:glow 2.6s ease-in-out infinite,jiggle 6.5s ease-in-out 2s infinite}
+  .btn--pop:hover,.btn--pop:focus-visible{animation-play-state:paused}
+  .mbar__cta.is-glow{--glow:221,187,132;animation:glow 2.6s ease-in-out infinite,jiggle 7s ease-in-out 3s infinite}
+}
+.btn--gold.btn--glow{--glow:221,187,132}
+.btn--wa.btn--glow{--glow:37,211,102}
+.btn--navy.btn--glow{--glow:196,154,92}
+@keyframes glow{
+  0%,100%{box-shadow:0 10px 26px -14px rgba(var(--glow,221,187,132),.9),0 0 0 0 rgba(var(--glow,221,187,132),0)}
+  50%{box-shadow:0 14px 34px -12px rgba(var(--glow,221,187,132),.95),0 0 0 6px rgba(var(--glow,221,187,132),.2),0 0 30px 4px rgba(var(--glow,221,187,132),.38)}
+}
+@keyframes jiggle{0%,84%,100%{scale:1;rotate:0deg}87%{scale:1.07;rotate:-1.5deg}90%{scale:.98;rotate:1.2deg}93%{scale:1.04;rotate:0deg}96%{scale:1}}
+
+@media (max-width:900px){
+  .day__step,.day__step:first-child{min-height:80svh}
+  .day__step:last-child{min-height:96svh}
+  .day__ctas .btn{flex:1 1 100%;width:100%}
+  .secure__clip{inset:0;width:auto;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}
+  .secure__tag{left:14px;bottom:14px}
+}
+@media (max-width:560px){
+  .promo{padding:14px}
+  .promo__pics{gap:6px;margin-bottom:12px}
+  .promo__pics figure{aspect-ratio:1/1}
+  .promo__big{font-size:19px}
+  .promo .checks li{font-size:14.5px}
+}

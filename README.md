@@ -15,7 +15,10 @@ Landing page de una sola página para **Punta Pacífico · Oceanview Living Ense
     2. 2 o 3 recámaras, propósito (hasta 2), cómo adquiere, plazo y canal. Si elige **visita en físico** o **videollamada**, escoge día (próximos 7 días) y hora (10–13 h y 16–18 h, hora de Ensenada).
     - Videollamada: se crea la reunión de Zoom automáticamente (ver abajo), el cliente ve el enlace y puede agregarla a Google Calendar / Apple / Outlook. Fran recibe el correo *"Videollamada por Zoom · día hora · nombre"* con el enlace.
     - Si Zoom no está configurado o falla, el cliente ve "te envío el enlace por WhatsApp" y el correo a Fran dice *"(crear Zoom)"*.
-  - **Material bloqueado** (brochure y análisis de rentabilidad): nombre, WhatsApp y correo; al enviar llega el correo y se abre WhatsApp con "Hola, llené el formulario de la web de Punta Pacífico, me interesa obtener el …".
+  - **Material bloqueado** (brochure y análisis de rentabilidad): nombre, WhatsApp, correo y **cómo lo quiere recibir: email o WhatsApp** (en /en sale marcado email; en /es, WhatsApp).
+    - **WhatsApp**: llega el correo a Fran y se abre WhatsApp con "Hola, llené el formulario de la web de Punta Pacífico, me interesa obtener el …".
+    - **Email**: el correo a Fran llega con el asunto **"ENVIAR POR EMAIL: …"** y el campo `Entrega` con el correo del cliente; Fran le responde con el PDF. El cliente ve la confirmación con su correo y un botón opcional a WhatsApp.
+  - **Pop-up de salida**: promoción de equipamiento incluido con fotos de la cocina, el clima desde el celular y la cocina lista para estrenar.
 - Eventos `whatsapp_click`, `form_open`, `form_step`, `lead_paso1` y `lead_submit` van a `dataLayer` y a `fbq` si existen (listo para GTM / Meta Pixel).
 
 ## Zoom automático (videollamadas)
@@ -43,6 +46,9 @@ privacidad.html / privacy.html  aviso de privacidad
 assets/           imágenes, videos y marca
 vercel.json       cache y encabezados de seguridad (CSP, HSTS, etc.)
 ```
+
+## Videos (v4)
+Los clips nuevos están en `assets/video/v4/` (720×1280, H.264 sin audio, con portada `.jpg`): `hero-reel` (vistas al mar), la historia **Así compras con Fran** (`p1-contacto`, `p2-puerta`, `p3-firma`, `p4-llaves`), **Un día en Punta Pacífico** (`d1-despertar` … `d5-atardecer`), `acceso`, `celular`, `cerradura` y `fran-sala`. Las historias usan el mismo componente `[data-day]` de `main.js`: para agregar otra, copia una sección `.day` con sus videos y pasos.
 
 ## Editar
 - Precios y tablas de pago: `index.html` / `en.html`, secciones `#residencias` y `#pagos`.
