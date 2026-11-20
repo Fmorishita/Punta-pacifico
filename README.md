@@ -33,7 +33,8 @@ Todos los envíos pasan por `sendLead(payload)` en `main.js`: ahí se conectará
 
 ## Estructura
 ```
-index.html        contenido en español
+index.html        contenido en español (raíz "/", detecta idioma)
+es.html           copia exacta de index.html que se sirve en /es (si cambias uno, cambia el otro)
 en.html           versión en inglés (USD)
 styles.css        diseño (desktop + móvil)
 main.js           animaciones, gráficas, modal, formularios en 2 pasos y citas
