@@ -2,7 +2,9 @@
 
 Landing page de una sola página para **Punta Pacífico · Oceanview Living Ensenada**, con Fran Morishita como asesor de ventas.
 
-- Producción: https://puntapacifico.vercel.app (español) y https://puntapacifico.vercel.app/en (inglés, precios en USD a 18 MXN).
+- Producción: https://puntapacifico.vercel.app
+  - **/es** → español (MXN) y **/en** → inglés (USD a 18 MXN). Estos dos enlaces siempre abren ese idioma; mándalos directo a cada cliente.
+  - **/** (sin nada) detecta el idioma del visitante y lo manda a /es o /en.
 - Sitio estático (HTML + CSS + JS sin dependencias) más una función serverless en `api/` para Zoom.
 
 ## Conversión

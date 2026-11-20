@@ -8,7 +8,7 @@
   <meta name="page-type" content="product">
   <meta name="site-kind" content="other">
   <meta name="theme-color" content="#0A1F2E">
-  <script>(function(){var en=document.documentElement.lang.indexOf('en')===0,want=null;try{var q=new URLSearchParams(location.search).get('lang');if(q==='es'||q==='en')localStorage.setItem('pp_lang',q);want=localStorage.getItem('pp_lang')}catch(e){}if(!want){var l=((navigator.languages&&navigator.languages[0])||navigator.language||'').toLowerCase();if(l.indexOf('es')===0)want='es';else if(l.indexOf('en')===0)want='en';else{var tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){}want=/Mexico|Tijuana|Hermosillo|Mazatlan|Chihuahua|Monterrey|Merida|Cancun|Matamoros|Bahia_Banderas|Bogota|Lima|Santiago|Buenos_Aires|Caracas|Madrid|Guatemala|Costa_Rica|Panama|El_Salvador|Tegucigalpa|Managua|Montevideo|Asuncion|La_Paz|Guayaquil|Santo_Domingo|Havana/.test(tz)?'es':'en'}}var on=/\/en(\.html)?\/?$/.test(location.pathname);if(want==='en'&&!en&&!on)location.replace('/en'+location.search+location.hash);else if(want==='es'&&en)location.replace('/'+location.search+location.hash)})();</script>
+  <script>(function(){var p=location.pathname.replace(/\/+$/,''),en=document.documentElement.lang.indexOf('en')===0,ex=/^\/(es|en)(\.html)?$/.exec(p);if(ex){try{localStorage.setItem('pp_lang',ex[1])}catch(e){}return}var want=null;try{var q=new URLSearchParams(location.search).get('lang');if(q==='es'||q==='en')localStorage.setItem('pp_lang',q);want=localStorage.getItem('pp_lang')}catch(e){}if(!want){var l=((navigator.languages&&navigator.languages[0])||navigator.language||'').toLowerCase();if(l.indexOf('es')===0)want='es';else if(l.indexOf('en')===0)want='en';else{var tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){}want=/Mexico|Tijuana|Hermosillo|Mazatlan|Chihuahua|Monterrey|Merida|Cancun|Matamoros|Bahia_Banderas|Bogota|Lima|Santiago|Buenos_Aires|Caracas|Madrid|Guatemala|Costa_Rica|Panama|El_Salvador|Tegucigalpa|Managua|Montevideo|Asuncion|La_Paz|Guayaquil|Santo_Domingo|Havana/.test(tz)?'es':'en'}}if(want==='en'&&!en)location.replace('/en'+location.search+location.hash);else if(want==='es'&&en)location.replace('/es'+location.search+location.hash)})();</script>
   <link rel="alternate" hreflang="es-MX" href="https://puntapacifico.vercel.app/">
   <link rel="alternate" hreflang="en" href="https://puntapacifico.vercel.app/en">
   <link rel="alternate" hreflang="x-default" href="https://puntapacifico.vercel.app/">
@@ -75,7 +75,7 @@
       </a>
       <button class="btn btn--gold btn--sm" data-open-form="visita">Book an appointment</button>
     </div>
-    <a class="nav__lang" href="/?lang=es" hreflang="es" lang="es" aria-label="Ver en español">ES</a>
+    <a class="nav__lang" href="/es" hreflang="es" lang="es" aria-label="Ver en español">ES</a>
     <button class="nav__burger" aria-label="Open menu" aria-expanded="false" aria-controls="mnav" data-burger><span></span><span></span></button>
     <span class="nav__progress" aria-hidden="true"><i data-progress></i></span>
   </header>
@@ -89,7 +89,7 @@
     <a href="#plusvalia"><small>11</small>Appreciation</a>
     <a href="#pagos"><small>12</small>Payment plans</a>
     <a href="#material"><small>13</small>Brochure and ROI</a>
-    <a href="/?lang=es" hreflang="es" lang="es"><small>ES</small>Versión en español</a>
+    <a href="/es" hreflang="es" lang="es"><small>ES</small>Versión en español</a>
     <button class="btn btn--gold btn--lg" data-open-form="visita">Book an appointment</button>
   </div>
 
@@ -673,7 +673,7 @@
             <div class="field"><label for="g-nombre">Full name</label><input id="g-nombre" name="nombre" maxlength="80" autocomplete="name" required placeholder="Your name"><small class="err" data-err="nombre"></small></div>
             <div class="field">
               <label for="g-tel">WhatsApp or mobile</label>
-              <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input id="g-tel" name="telefono" maxlength="20" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="+1 619 000 0000"></div>
+              <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input id="g-tel" name="telefono" maxlength="20" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="619 000 0000"></div>
               <small class="err" data-err="telefono"></small>
             </div>
             <div class="field"><label for="g-email">Email</label><input id="g-email" name="email" maxlength="120" type="email" autocomplete="email" required placeholder="you@email.com"><small class="err" data-err="email"></small></div>
@@ -798,7 +798,7 @@
         <div class="field"><label>Full name</label><input name="nombre" maxlength="80" autocomplete="name" required placeholder="Your name"><small class="err" data-err="nombre"></small></div>
         <div class="field">
           <label>WhatsApp or mobile</label>
-          <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input name="telefono" maxlength="20" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="+1 619 000 0000"></div>
+          <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input name="telefono" maxlength="20" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="619 000 0000"></div>
           <small class="err" data-err="telefono"></small>
         </div>
         <div class="field"><label>Email</label><input name="email" maxlength="120" type="email" autocomplete="email" required placeholder="you@email.com"><small class="err" data-err="email"></small></div>
@@ -876,7 +876,7 @@
       <div class="field"><label>Full name</label><input name="nombre" maxlength="80" autocomplete="name" required placeholder="Your name"><small class="err" data-err="nombre"></small></div>
       <div class="field">
         <label>WhatsApp or mobile</label>
-        <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input name="telefono" maxlength="20" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="+1 619 000 0000"></div>
+        <div class="phone-in"><select name="lada" aria-label="Country code"><option value="+1" selected>US +1</option><option value="+52">MX +52</option></select><input name="telefono" maxlength="20" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="619 000 0000"></div>
         <small class="err" data-err="telefono"></small>
       </div>
       <div class="field"><label>Email</label><input name="email" maxlength="120" type="email" autocomplete="email" required placeholder="you@email.com"><small class="err" data-err="email"></small></div>

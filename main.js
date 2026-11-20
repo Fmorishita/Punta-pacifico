@@ -401,13 +401,55 @@
     return form;
   };
 
+  /* Teléfono: lista de todos los países (MX y US primero), validación por país */
+  const DIAL = 'AD376,AE971,AF93,AG1,AI1,AL355,AM374,AO244,AR54,AS1,AT43,AU61,AW297,AX358,AZ994,BA387,BB1,BD880,BE32,BF226,BG359,BH973,BI257,BJ229,BL590,BM1,BN673,BO591,BQ599,BR55,BS1,BT975,BW267,BY375,BZ501,CA1,CC61,CD243,CF236,CG242,CH41,CI225,CK682,CL56,CM237,CN86,CO57,CR506,CU53,CV238,CW599,CX61,CY357,CZ420,DE49,DJ253,DK45,DM1,DO1,DZ213,EC593,EE372,EG20,EH212,ER291,ES34,ET251,FI358,FJ679,FK500,FM691,FO298,FR33,GA241,GB44,GD1,GE995,GF594,GG44,GH233,GI350,GL299,GM220,GN224,GP590,GQ240,GR30,GT502,GU1,GW245,GY592,HK852,HN504,HR385,HT509,HU36,ID62,IE353,IL972,IM44,IN91,IO246,IQ964,IR98,IS354,IT39,JE44,JM1,JO962,JP81,KE254,KG996,KH855,KI686,KM269,KN1,KP850,KR82,KW965,KY1,KZ7,LA856,LB961,LC1,LI423,LK94,LR231,LS266,LT370,LU352,LV371,LY218,MA212,MC377,MD373,ME382,MF590,MG261,MH692,MK389,ML223,MM95,MN976,MO853,MP1,MQ596,MR222,MS1,MT356,MU230,MV960,MW265,MX52,MY60,MZ258,NA264,NC687,NE227,NF672,NG234,NI505,NL31,NO47,NP977,NR674,NU683,NZ64,OM968,PA507,PE51,PF689,PG675,PH63,PK92,PL48,PM508,PR1,PS970,PT351,PW680,PY595,QA974,RE262,RO40,RS381,RU7,RW250,SA966,SB677,SC248,SD249,SE46,SG65,SH290,SI386,SJ47,SK421,SL232,SM378,SN221,SO252,SR597,SS211,ST239,SV503,SX1,SY963,SZ268,TC1,TD235,TG228,TH66,TJ992,TK690,TL670,TM993,TN216,TO676,TR90,TT1,TV688,TW886,TZ255,UA380,UG256,US1,UY598,UZ998,VA39,VC1,VE58,VG1,VI1,VN84,VU678,WF681,WS685,XK383,YE967,YT262,ZA27,ZM260,ZW263';
+  const COUNTRIES = (() => {
+    let dn = null;
+    try { dn = new Intl.DisplayNames([EN ? 'en' : 'es-MX'], { type: 'region' }); } catch (e) { /* sin nombres: se muestra el código ISO */ }
+    return DIAL.split(',').map(e => {
+      const iso = e.slice(0, 2);
+      let name = iso;
+      try { name = (dn && dn.of(iso)) || iso; } catch (e) { /* noop */ }
+      return { iso, code: e.slice(2), name };
+    });
+  })();
+  const DIAL_CODES = new Set(COUNTRIES.map(c => c.code));
+  const fillLada = (sel) => {
+    if (!sel || sel.dataset.full) return;
+    sel.dataset.full = '1';
+    const first = EN ? ['US', 'MX'] : ['MX', 'US'];
+    const top = first.map(i => COUNTRIES.find(c => c.iso === i));
+    const rest = COUNTRIES.filter(c => !first.includes(c.iso)).sort((a, b) => a.name.localeCompare(b.name, EN ? 'en' : 'es'));
+    const opt = c => `<option value="+${c.code}" data-s="+${c.code}">+${c.code} ${esc(c.name)}</option>`;
+    sel.innerHTML = top.map(opt).join('') + '<option disabled>──────────</option>' + rest.map(opt).join('');
+    sel.selectedIndex = 0;
+    // Cerrado muestra solo el código (+52); al abrir, la lista trae el nombre de cada país.
+    sel.querySelectorAll('option[data-s]').forEach(o => { o.dataset.t = o.textContent; });
+    ['focus', 'mousedown', 'touchstart', 'keydown'].forEach(ev => sel.addEventListener(ev, () => expandLada(sel), { passive: true }));
+    ['change', 'blur'].forEach(ev => sel.addEventListener(ev, () => collapseLada(sel)));
+    collapseLada(sel);
+  };
+  const expandLada = (sel) => sel.querySelectorAll('option[data-t]').forEach(o => { o.textContent = o.dataset.t; });
+  const collapseLada = (sel) => {
+    expandLada(sel);
+    const o = sel.selectedOptions[0];
+    if (o && o.dataset.s) o.textContent = o.dataset.s;
+    sel.title = o && o.dataset.t ? o.dataset.t : '';
+  };
+  const phonePlaceholder = (code) => (code === '52' ? '646 000 0000' : code === '1' ? '619 000 0000' : '000 000 000');
+  // MX y Norteamérica (+1) llevan 10 dígitos; el resto de países, de 6 a 14.
+  const phoneOk = ({ code, d }) => (code === '52' || code === '1' ? d.length === 10 : d.length >= 6 && d.length <= 14);
+  const phoneMsg = (code) => (code === '52' || code === '1' ? L('Escribe tu número a 10 dígitos.', 'Enter your 10-digit number.') : L('Escribe un número de teléfono válido.', 'Enter a valid phone number.'));
   function phoneDigits(form) {
     const code = form.elements.lada ? form.elements.lada.value.replace(/\D/g, '') : '52';
-    let d = form.elements.telefono.value.replace(/\D/g, '');
-    if (d.length > 10 && d.startsWith(code)) d = d.slice(code.length);
+    const raw = form.elements.telefono.value.trim();
+    let d = raw.replace(/\D/g, '');
+    if (/^(\+|00)/.test(raw)) { d = raw.replace(/^(\+|00)/, '').replace(/\D/g, ''); if (d.startsWith(code)) d = d.slice(code.length); }
+    else if ((code === '52' || code === '1') && d.length > 10 && d.startsWith(code)) d = d.slice(code.length);
     if (code === '52' && d.length === 11 && d.startsWith('1')) d = d.slice(1);
     return { code, d };
   }
+  const phonePretty = ({ code, d }) => (d.length === 10 ? `+${code} ${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : `+${code} ${d}`);
   const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
   const fval = (form, n) => { const el = form.elements[n]; return el && typeof el.value === 'string' ? el.value.trim() : ''; };
   const picked = (form, n) => { const c = form.querySelector(`input[name="${n}"]:checked`); return c ? c.value : ''; };
@@ -465,7 +507,7 @@
     if (!box) return;
     const bar = $('[data-fp-bar]', box), txt = $('[data-fp-text]', box);
     if (form.dataset.step !== '2') {
-      const done = [fval(form, 'nombre').length >= 3, phoneDigits(form).d.length === 10, emailOk(fval(form, 'email'))].filter(Boolean).length;
+      const done = [fval(form, 'nombre').length >= 3, phoneOk(phoneDigits(form)), emailOk(fval(form, 'email'))].filter(Boolean).length;
       bar.style.width = (done / 3 * 50) + '%';
       txt.textContent = L('Paso 1 de 2 · Tus datos', 'Step 1 of 2 · Your details');
       box.classList.remove('is-done');
@@ -498,7 +540,23 @@
 
   function wireForm(form) {
     const lada = form.elements.lada, tel = form.elements.telefono;
-    if (lada && tel) lada.addEventListener('change', () => { tel.placeholder = lada.value === '+1' ? '+1 619 000 0000' : '+52 646 000 0000'; progress(form); });
+    fillLada(lada);
+    if (lada && tel) {
+      const syncPh = () => { tel.placeholder = phonePlaceholder(lada.value.replace(/\D/g, '')); };
+      lada.addEventListener('change', () => { syncPh(); progress(form); });
+      // Si escribe el número con "+" y el código de otro país, se cambia el selector solo.
+      tel.addEventListener('input', () => {
+        const v = tel.value.trim();
+        if (!v.startsWith('+')) return;
+        const digits = v.replace(/\D/g, '');
+        const hit = [1, 2, 3].map(n => digits.slice(0, n)).find(c => DIAL_CODES.has(c));
+        if (hit && '+' + hit !== lada.value) {
+          const o = [...lada.options].find(x => x.value === '+' + hit);
+          if (o) { lada.value = o.value; collapseLada(lada); syncPh(); }
+        }
+      });
+      syncPh();
+    }
     buildSlots(form);
     $$('.chips[data-max]', form).forEach(group => {
       const max = +group.dataset.max;
@@ -535,7 +593,8 @@
     const full = form.dataset.leadForm === 'full';
     if (!full || step === 1) {
       if (fval(form, 'nombre').length < 3) errors.nombre = L('Escribe tu nombre completo.', 'Enter your full name.');
-      if (phoneDigits(form).d.length !== 10) errors.telefono = L('Escribe tu número a 10 dígitos.', 'Enter your 10-digit number.');
+      const ph = phoneDigits(form);
+      if (!phoneOk(ph)) errors.telefono = phoneMsg(ph.code);
       if (!emailOk(fval(form, 'email'))) errors.email = L('Escribe un correo válido.', 'Enter a valid email.');
     }
     if (full && step === 2) {
@@ -569,7 +628,7 @@
   }
 
   const leadBase = (form, subject, tipo) => {
-    const { code, d } = phoneDigits(form);
+    const ph = phoneDigits(form);
     return {
       _subject: subject,
       _template: 'table',
@@ -577,7 +636,7 @@
       _replyto: fval(form, 'email'),
       Tipo: tipo,
       Nombre: fval(form, 'nombre'),
-      WhatsApp: `+${code} ${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`,
+      WhatsApp: phonePretty(ph),
       email: fval(form, 'email'),
       Idioma: EN ? 'Inglés (USD)' : 'Español',
       Origen_CTA: form.dataset.origin || (form.dataset.leadForm === 'gate' ? 'material' : 'formulario')

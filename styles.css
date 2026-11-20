@@ -548,7 +548,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .field input:focus,.phone-in select:focus{outline:none;border-color:var(--gold);background:#fff;box-shadow:0 0 0 4px rgba(196,154,92,.18)}
 .field [aria-invalid="true"]{border-color:var(--err)!important;box-shadow:0 0 0 4px rgba(178,58,48,.12)}
 .phone-in{display:grid;grid-template-columns:112px 1fr;gap:8px}
-.phone-in select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--navy) 50%),linear-gradient(135deg,var(--navy) 50%,transparent 50%);background-position:calc(100% - 18px) 22px,calc(100% - 13px) 22px;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px;cursor:pointer}
+.phone-in select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--navy) 50%),linear-gradient(135deg,var(--navy) 50%,transparent 50%);background-position:calc(100% - 18px) 22px,calc(100% - 13px) 22px;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px;cursor:pointer;text-overflow:ellipsis;white-space:nowrap}
 .err{color:var(--err)!important;font-size:13px!important}
 .err:empty{display:none}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -769,7 +769,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .chart__tip{font-size:11px;padding:2px 6px}
   .chart__labels small{display:none}
   .chart__legend{gap:8px 18px;font-size:13.5px}
-  .phone-in{grid-template-columns:100px 1fr}
+  .phone-in{grid-template-columns:96px 1fr}
   .modal__box{padding:22px 18px}
   .cta-row .btn{flex:1 1 100%}
   .bridge .bridge__amt{font-size:22px}
