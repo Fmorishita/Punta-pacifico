@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Cotizador Punta Pacífico</title>
+<meta name="description" content="Cotizador de casas Punta Pacífico · Clúster 1, Ensenada.">
+<link rel="icon" href="/favicon.ico">
+<link rel="preload" href="/assets/cotizador/fonts/barlow-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/cotizador/fonts/barlow-condensed-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/cotizador/cotizador.css">
+<script src="/cotizador/calc.js" defer></script>
+<script src="/cotizador/app.js" defer></script>
+</head>
+<body>
+<header class="top" id="top">
+  <div style="display:flex;align-items:baseline;gap:14px">
+    <span class="marca">Punta Pacífico</span>
+    <span class="sub" id="sub">Clúster 1</span>
+  </div>
+  <div class="top-der" id="top-der"></div>
+</header>
+
+<div class="pagina">
+  <main>
+    <nav class="pasos" id="pasos" aria-label="Pasos de la cotización"></nav>
+    <section class="vista" id="vista" aria-live="polite">
+      <p class="muted">Cargando inventario…</p>
+    </section>
+    <div class="hojas" id="hojas" aria-hidden="true"></div>
+  </main>
+  <aside id="aside"></aside>
+</div>
+
+<div id="dialogo"></div>
+<noscript><p style="padding:24px">El cotizador necesita JavaScript activado.</p></noscript>
+</body>
+</html>

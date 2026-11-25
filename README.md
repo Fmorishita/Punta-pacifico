@@ -31,6 +31,20 @@ Landing page de una sola página para **Punta Pacífico · Oceanview Living Ense
 
 La función `api/zoom-meeting.js` valida los datos (día dentro de los próximos 14, horario permitido), limita solicitudes por IP, solo acepta llamadas desde el sitio y nunca devuelve el enlace de anfitrión.
 
+## Cotizador (/cotizador)
+Réplica del "Cotizador Punta Pacífico · Clúster 1" en `https://puntapacifico.vercel.app/cotizador` (no se indexa en Google).
+3 pasos: **01 Lote** (plano Color/B/N/Render con pines, filtros 2/3 rec) → **02 Esquema** (5 esquemas + ajustes) → **03 Cotización** (estructura de pago, calendario, plusvalía y PDF de 2 hojas generado en el navegador).
+
+- **Esquemas de pago, textos, tasas de plusvalía, superficies y requisitos**: `cotizador/data/config.json`. Se edita el JSON y se publica; no hay que tocar código.
+  - Cada esquema: `descuento` (%), `apartado` ($ o `null`), `apartadoTodo` (el 1er enganche completo se paga al apartar), `m1`/`m2` (meses de cada complemento), `pct` (primero/segundo/escritura, deben sumar 100), `engLibre` (permite enganche personalizado).
+- **Lista de precios**: `cotizador/data/inventario.json`. Las casas vendidas van con `"vendida": true` y `"precio": null`.
+- **Fórmulas**: `cotizador/calc.js`. Pruebas con los casos del original: `node tests/cotizador.test.js`.
+- **Acceso de gerente** (cotizar casas vendidas): lo valida `api/cotizador-gerente.js` en el servidor. En Vercel → *Settings* → *Environment Variables*:
+  - `GERENTE_EMAIL` (uno o varios separados por coma) y `GERENTE_PASSWORD`
+  - `COTIZADOR_SECRET`: texto largo al azar (firma la sesión de 12 h)
+  - `COTIZADOR_VENDIDAS`: precios de las vendidas, p. ej. `{"9":1234567,"10":2345678.5}`. Al vender una casa: márcala `vendida` en el inventario y agrega su precio aquí.
+- Planos, fuentes y librerías del PDF (html2canvas 1.4.1, jsPDF 2.5.1, licencia MIT) están en `assets/cotizador/`. Si cambias una imagen, cámbiale el nombre: `/assets` se guarda en caché 30 días.
+
 ## Base de datos (pendiente)
 Todos los envíos pasan por `sendLead(payload)` en `main.js`: ahí se conectará Supabase para guardar los leads además del correo.
 
@@ -42,6 +56,9 @@ en.html           versión en inglés (USD)
 styles.css        diseño (desktop + móvil)
 main.js           animaciones, gráficas, modal, formularios en 2 pasos y citas
 api/zoom-meeting.js  función serverless que crea la videollamada de Zoom
+api/cotizador-gerente.js  valida el acceso de gerente del cotizador
+cotizador/        cotizador: index.html, app.js, calc.js, cotizador.css y data/*.json
+tests/            pruebas del cotizador (node tests/cotizador.test.js)
 privacidad.html / privacy.html  aviso de privacidad
 assets/           imágenes, videos y marca
 vercel.json       cache y encabezados de seguridad (CSP, HSTS, etc.)

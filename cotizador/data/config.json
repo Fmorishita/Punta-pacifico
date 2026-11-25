@@ -1,0 +1,163 @@
+{
+ "proyecto": {
+  "nombre": "Punta Pacífico",
+  "cluster": "Clúster 1",
+  "lista": "Lista de precios al 03 Sep 26",
+  "moneda": "MXN",
+  "lema": "Oceanview Living · Ensenada",
+  "prefijoFolio": "PP-C1-",
+  "prefijoUbicacion": "C1-"
+ },
+ "vigenciaDias": 15,
+ "esquemas": {
+  "vigencia": "Septiembre 2026",
+  "fuente": "Esquemas y Tiempos Entrega PP.xlsx",
+  "reglas": [
+   "Precio final = precio de venta menos el descuento aplicado.",
+   "El anticipo de apartado forma parte del 1er enganche; el remanente se cubre en el plazo del complemento.",
+   "El 2º complemento arranca una vez cubierto el 1er enganche (plazos en serie).",
+   "Saldo a financiar al momento de escritura = precio final menos ambos enganches.",
+   "Sin intereses en todos los esquemas."
+  ],
+  "pendientes": [
+   "Cuota de mantenimiento: monto y fecha de inicio por definir."
+  ],
+  "lista": [
+   {
+    "id": "e50",
+    "nombre": "Esquema $50 mil enganche",
+    "descuento": 5,
+    "apartado": 50000,
+    "apartadoTodo": false,
+    "m1": 3,
+    "m2": 24,
+    "pct": {
+     "primero": 10,
+     "segundo": 10,
+     "escritura": 80
+    },
+    "integracion": "Apartado de $50,000; resto del 1er 10% en 3 meses y 2º 10% en 24 meses",
+    "apartadoTxt": "$50,000",
+    "saldo": "80% a escritura"
+   },
+   {
+    "id": "e100",
+    "nombre": "Esquema $100 mil enganche",
+    "descuento": 5,
+    "apartado": 100000,
+    "apartadoTodo": false,
+    "m1": 3,
+    "m2": 24,
+    "pct": {
+     "primero": 10,
+     "segundo": 10,
+     "escritura": 80
+    },
+    "integracion": "Apartado de $100,000; resto del 1er 10% en 3 meses y 2º 10% en 24 meses",
+    "apartadoTxt": "$100,000",
+    "saldo": "80% a escritura",
+    "engLibre": true
+   },
+   {
+    "id": "e10",
+    "nombre": "Esquema 10% enganche",
+    "descuento": 5,
+    "apartado": null,
+    "apartadoTodo": true,
+    "m1": 0,
+    "m2": 24,
+    "pct": {
+     "primero": 10,
+     "segundo": 10,
+     "escritura": 80
+    },
+    "integracion": "1er 10% completo al apartar y 2º 10% en 24 meses",
+    "apartadoTxt": "10% del precio final",
+    "saldo": "80% a escritura",
+    "engLibre": true
+   },
+   {
+    "id": "e40",
+    "nombre": "Esquema 40% enganche contado",
+    "descuento": 10,
+    "apartado": null,
+    "apartadoTodo": true,
+    "m1": 0,
+    "m2": 24,
+    "pct": {
+     "primero": 40,
+     "segundo": 40,
+     "escritura": 20
+    },
+    "integracion": "40% completo al apartar y 2º 40% en 24 meses",
+    "apartadoTxt": "40% del precio final",
+    "saldo": "20% a escritura"
+   },
+   {
+    "id": "e10e90",
+    "nombre": "Esquema 10% enganche - 90% escritura",
+    "descuento": 5,
+    "apartado": 100000,
+    "apartadoTodo": false,
+    "m1": 3,
+    "m2": 0,
+    "pct": {
+     "primero": 10,
+     "segundo": 0,
+     "escritura": 90
+    },
+    "integracion": "Apartado de $100,000; resto del 10% en 3 meses; sin 2º complemento",
+    "apartadoTxt": "$100,000",
+    "saldo": "90% a escritura"
+   }
+  ]
+ },
+ "limites": {
+  "descuentoMax": 50,
+  "plazoMax": 60
+ },
+ "plusvalia": {
+  "mostrar": true,
+  "tasaConservadora": 8,
+  "tasaOptimista": 10,
+  "anios": 8
+ },
+ "mostrarCalendario": true,
+ "superficies": {
+  "2R": {
+   "construccion": 111.53,
+   "roof": 66.53,
+   "disfrutable": 178.06
+  },
+  "3R": {
+   "construccion": 120.44,
+   "roof": 74.75,
+   "disfrutable": 195.19
+  }
+ },
+ "gerenteComercial": "MA. Moises Caldera",
+ "observaciones": "Incluye cocina con barra de granito, estufa con horno y campana; clósets en recámaras; piso de loseta cerámica; minisplit en recámaras y área de sala-comedor; baños con cancel de cristal templado y equipamiento inteligente. Además, cada vivienda cuenta con roof garden, equipado con medio baño, barra con tarja, asador y pérgola, brindando un espacio adicional para convivencia, descanso y aprovechamiento de vistas.",
+ "requisitos": {
+  "entrega": [
+   "Identificación oficial vigente",
+   "Acta de nacimiento",
+   "CURP",
+   "Constancia de situación fiscal",
+   "Comprobante de domicilio",
+   "Carátula de cuenta bancaria"
+  ],
+  "firma": [
+   "Aviso de privacidad Eterea (ET)",
+   "Formato PLD Eterea (ET)",
+   "Aviso de privacidad VidaMar Natura (VDN)",
+   "Formato PLD VidaMar Natura (VDN)"
+  ]
+ },
+ "textos": {
+  "notaPlazos": "Cada esquema carga los valores del Excel; puedes ajustarlos y todo se recalcula. El 2º complemento arranca una vez cubierto el 1er enganche. Sin intereses.",
+  "pieLegal": "Cotización válida por 15 días naturales. Precios en pesos mexicanos, sujetos a cambio sin previo aviso. Cotización informativa; no constituye oferta vinculante. Cuota de mantenimiento por definir.",
+  "legalVendida": "Esta cotización esta sujeta a revisión y confirmación de Dirección General",
+  "legalHoja1": "Esta cotización es informativa y está sujeta a disponibilidad, vigencia, cambios de precio y autorización comercial.",
+  "legalHoja2": "Fechas estimadas a partir de la fecha de apartado. Proyección de valor ilustrativa; no constituye garantía de rendimiento. Cotización válida por 15 días naturales."
+ }
+}
