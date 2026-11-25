@@ -1,23 +1,24 @@
 /**
- * POST /api/cotizador-gerente
- * Acceso de gerente del cotizador: permite cotizar casas vendidas.
+ * POST /api/cotizador-acceso
+ * Acceso al cotizador. Sin sesión válida no se entrega el inventario.
  *
- *   { email, password }  → { token, exp, vendidas }   (inicia sesión)
- *   { token }            → { exp, vendidas }          (renueva al recargar la página)
+ *   { email, password }  → { token, exp, lotes }   (inicia sesión, dura 12 h)
+ *   { token }            → { exp, lotes }          (recarga la página sin volver a pedir contraseña)
  *
  * Variables de entorno (Vercel → Settings → Environment Variables):
- *   GERENTE_EMAIL         correo del gerente (o varios separados por coma)
+ *   GERENTE_EMAIL         correo con acceso (o varios separados por coma)
  *   GERENTE_PASSWORD      contraseña
- *   COTIZADOR_SECRET      texto largo al azar para firmar la sesión (opcional pero recomendado)
+ *   COTIZADOR_SECRET      texto largo al azar para firmar la sesión
  *   COTIZADOR_VENDIDAS    precios de las casas vendidas, JSON: {"9":1234567,"10":2345678.5,...}
  *   ALLOWED_ORIGINS       (opcional) dominios extra separados por coma
  *
- * Seguridad: la contraseña y los precios de las vendidas nunca están en el código ni en
- * los archivos públicos; la comparación es de tiempo constante; hay límite de intentos por IP.
+ * El inventario vive en api/_data/inventario.json (no se publica como archivo; vercel.json
+ * redirige esa ruta). Las casas vendidas van ahí sin precio: su precio solo sale de COTIZADOR_VENDIDAS.
  */
 'use strict';
 
 const crypto = require('crypto');
+const INVENTARIO = require('./_data/inventario.json');
 
 const DEFAULT_ORIGINS = ['https://puntapacifico.vercel.app'];
 const SESSION_MS = 12 * 60 * 60 * 1000;
@@ -56,8 +57,7 @@ function secreto() {
 }
 
 function firmar(exp) {
-  const sig = crypto.createHmac('sha256', secreto()).update('gerente|' + exp).digest('base64url');
-  return exp + '.' + sig;
+  return exp + '.' + crypto.createHmac('sha256', secreto()).update('cotizador|' + exp).digest('base64url');
 }
 
 function tokenValido(token) {
@@ -68,15 +68,15 @@ function tokenValido(token) {
   return iguales(firmar(exp), token) ? exp : 0;
 }
 
-function vendidas() {
-  try {
-    const j = JSON.parse(process.env.COTIZADOR_VENDIDAS || '{}');
-    const out = {};
-    for (const [k, v] of Object.entries(j)) if (/^\d{1,4}$/.test(k) && Number(v) > 0) out[k] = Number(v);
-    return out;
-  } catch (e) {
-    return {};
-  }
+/** Inventario con los precios de las vendidas que estén en COTIZADOR_VENDIDAS. */
+function lotes() {
+  let v = {};
+  try { v = JSON.parse(process.env.COTIZADOR_VENDIDAS || '{}') || {}; } catch (e) { v = {}; }
+  return INVENTARIO.lotes.map(l => {
+    if (!l.vendida) return l;
+    const p = Number(v[String(l.num)]);
+    return Object.assign({}, l, { precio: p > 0 ? p : null });
+  });
 }
 
 module.exports = async (req, res) => {
@@ -97,7 +97,7 @@ module.exports = async (req, res) => {
   if (body.token) {
     const exp = tokenValido(body.token);
     if (!exp) return res.status(401).json({ error: 'expired' });
-    return res.status(200).json({ exp, vendidas: vendidas() });
+    return res.status(200).json({ exp, lista: INVENTARIO.lista, lotes: lotes() });
   }
 
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'local';
@@ -112,5 +112,5 @@ module.exports = async (req, res) => {
   if (!(okEmail && okPass)) return res.status(401).json({ error: 'invalid' });
 
   const exp = Date.now() + SESSION_MS;
-  return res.status(200).json({ token: firmar(exp), exp, vendidas: vendidas() });
+  return res.status(200).json({ token: firmar(exp), exp, lista: INVENTARIO.lista, lotes: lotes() });
 };

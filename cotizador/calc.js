@@ -143,7 +143,7 @@
     const fila = (k, d, v) => { acum += v; out.push({ k, d, v, acum }); };
     if (c.ap > 0) fila('Apartado', base, c.ap);
     if (c.m1 > 0) {
-      for (let i = 1; i <= c.m1; i++) fila('Primer ' + c.p1 + '% · ' + i + '/' + c.m1, masMeses(base, i), c.mens1);
+      for (let i = 1; i <= c.m1; i++) fila((c.flex ? 'Enganche ' : 'Primer ') + c.p1 + '% · ' + i + '/' + c.m1, masMeses(base, i), c.mens1);
     } else if (c.resto > 0) {
       fila('Pago inicial ' + c.p1 + '%', base, c.resto);
     }
@@ -210,6 +210,7 @@
     return '$' + Math.round(v);
   };
   const fecha = d => d.getDate() + ' ' + MESES_CORTOS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
+  const fechaLarga = d => d.getDate() + ' de ' + MESES[d.getMonth()] + ' de ' + d.getFullYear();
   const fechaCorta = d => String(d.getDate()).padStart(2, '0') + '-' + MESES_CORTOS[d.getMonth()] + '-' + d.getFullYear();
   function isoDe(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -221,7 +222,7 @@
     return MESES[m - 1].charAt(0).toUpperCase() + MESES[m - 1].slice(1) + ' ' + y;
   };
 
-  const api = { entradas, calcular, calendario, plusvalia, masMeses, masDias, mesesEntre, fechaEntrega, fechaISO, isoDe, mx, mxf, mxc, fecha, fechaCorta, hoyISO, mesAnio, MESES };
+  const api = { entradas, calcular, calendario, plusvalia, masMeses, masDias, mesesEntre, fechaEntrega, fechaISO, isoDe, mx, mxf, mxc, fecha, fechaCorta, fechaLarga, hoyISO, mesAnio, MESES };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.PPCalc = api;
 })(typeof self !== 'undefined' ? self : this);

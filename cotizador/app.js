@@ -1,50 +1,130 @@
 /**
- * Cotizador Punta Pacífico · Clúster 1
- * Página sin dependencias: lee cotizador/data/*.json, pinta los 3 pasos y arma el PDF en el navegador.
- * Las fórmulas viven en calc.js (probadas en tests/cotizador.test.js).
+ * Cotizador Punta Pacífico · Clúster 1 (v2)
+ * - Acceso obligatorio: el inventario solo llega desde /api/cotizador-acceso con sesión válida (12 h, por pestaña).
+ * - 3 pasos: lote → esquema → cotización; PDF de 2 hojas armado en el navegador.
+ * Fórmulas en calc.js (probadas en tests/cotizador.test.js).
  */
 (function () {
   'use strict';
 
   const C = window.PPCalc;
   const DATA = '/cotizador/data/';
+  const API = '/api/cotizador-acceso';
   const IMG = {
     color: '/assets/cotizador/img/plano-color.png',
     bn: '/assets/cotizador/img/plano-bn.png',
     render: '/assets/cotizador/img/plano-render.jpg',
-    portada: '/assets/cotizador/img/portada.jpg'
+    portada: '/assets/cotizador/img/portada-mar.jpg'
   };
   const LIBS = ['/assets/cotizador/vendor/html2canvas-1.4.1.min.js', '/assets/cotizador/vendor/jspdf-2.5.1.umd.min.js'];
   const W = 1224, H = 792; // marco de coordenadas de los pines
-  const TOKEN_KEY = 'pp-cotizador-gerente';
+  const TOKEN_KEY = 'pp-cotizador-sesion';
+  const COL = { '2R': ['#c9a96e', '#8f7440', '#2b2110'], '3R': ['#2e6d8e', '#1d4c66', '#ffffff'], vend: ['#d3d0cb', '#a9a49c', '#5f5a53'], sel: ['#d8693f', '#a94a26', '#ffffff'] };
 
   const AJ0 = () => ({ desc: null, ap: null, m1: null, m2: null, engOn: false, eng: null, pct1: null, mens: null, saldo: null });
   const S = {
-    cfg: null, lotes: [], pinesPlano: null, pinesRender: null,
-    paso: 1, lote: null, esquema: null, descOn: false, aj: AJ0(), inicio: C.hoyISO(),
+    cfg: null, lotes: [], lista: '', pinesPlano: null, pinesRender: null, sesion: null,
+    paso: 1, lote: null, esquema: null, descOn: false, aj: AJ0(), inicio: C.hoyISO(), vigencia: null,
     filtro: 'todos', modo: 'color',
-    cliente: '', telefono: '', correo: '', asesor: '', obs: '',
-    gerente: null, vendidas: {}, login: null, pdf: null
+    cliente: '', telefono: '', correo: '', asesor: '', obs: '', pdf: null
   };
 
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const K = '<i class="k tl"></i><i class="k tr"></i><i class="k bl"></i><i class="k br"></i>';
   const pct = (v, total) => (v / total * 100).toFixed(3) + '%';
+  const tipoTxt = t => t === '2R' ? '2 recámaras' : '3 recámaras';
 
-  // ---------- Datos ----------
+  // ---------- Datos derivados ----------
   const esq = () => S.cfg ? (S.cfg.esquemas.lista.find(e => e.id === S.esquema) || S.cfg.esquemas.lista[0]) : null;
-  const precioDe = l => !l ? null : (l.vendida ? (S.gerente && S.vendidas[l.num] != null ? S.vendidas[l.num] : null) : l.precio);
-  const puedeElegir = l => !!l && (!l.vendida || (S.gerente && S.vendidas[l.num] != null));
+  const precioDe = l => l ? l.precio : null;
+  const puedeElegir = l => !!l && l.precio != null;
   const ajustes = () => Object.assign({ descOn: S.descOn, inicio: S.inicio, entrega: S.lote ? S.lote.entrega : null }, S.aj);
-  const calc = () => { const L = S.lote, e = esq(); return L && e ? C.calcular(precioDe(L), e, ajustes()) : null; };
-  const texto = k => (S.cfg && S.cfg.textos[k]) || '';
+  const calc = () => { const L = S.lote, e = esq(); return L && e && L.precio != null ? C.calcular(L.precio, e, ajustes()) : null; };
+  const dias = () => S.vigencia != null ? S.vigencia : S.cfg.vigenciaDias;
+  const venceEl = () => C.masDias(new Date(), dias());
+  const texto = k => ((S.cfg && S.cfg.textos[k]) || '').replace(/\{dias\}/g, dias());
+  const legales = () => [S.lote && S.lote.vendida ? texto('legalVendida') : '', esq() && esq().tipo === 'flexible' ? texto('legalPersonalizado') : ''].filter(Boolean).map(t => t.replace(/\.\s*$/, ''));
 
-  function elegirLote(l, irAEsquema) {
-    if (!puedeElegir(l)) return;
-    S.lote = l;
-    if (irAEsquema) S.paso = 2;
+  // ---------- Acceso ----------
+  async function api(payload) {
+    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' });
+    let j = {};
+    try { j = await r.json(); } catch (e) { /* vacío */ }
+    return { ok: r.ok, status: r.status, j };
+  }
+
+  function mostrarAcceso(msg) {
+    $('acceso').hidden = false;
+    $('top').hidden = true;
+    $('pagina').hidden = true;
+    const err = $('ac-err');
+    err.hidden = !msg;
+    err.textContent = msg || '';
+    const b = $('ac-btn');
+    b.disabled = false; b.textContent = 'Entrar';
+    setTimeout(() => ($('ac-email').value ? $('ac-pass') : $('ac-email')).focus(), 50);
+  }
+
+  function abrirCotizador(j, token) {
+    S.sesion = { token, exp: j.exp };
+    S.lotes = j.lotes || [];
+    if (j.lista) S.lista = j.lista;
+    if (S.lote) S.lote = S.lotes.find(l => l.num === S.lote.num) || null;
+    $('acceso').hidden = true;
+    $('top').hidden = false;
+    $('pagina').hidden = false;
+    $('ac-pass').value = '';
     render();
+    programarCierre();
+  }
+
+  let cierre = null;
+  function programarCierre() {
+    clearTimeout(cierre);
+    const falta = S.sesion.exp - Date.now();
+    if (falta > 0) cierre = setTimeout(() => cerrarSesion('Tu sesión expiró. Vuelve a entrar.'), Math.min(falta, 2147483000));
+  }
+
+  function cerrarSesion(msg) {
+    clearTimeout(cierre);
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* nada */ }
+    S.sesion = null; S.lotes = []; S.lote = null; S.paso = 1; S.pdf = null;
+    $('vista').innerHTML = ''; $('aside').innerHTML = ''; $('hojas').innerHTML = ''; $('dialogo').innerHTML = '';
+    mostrarAcceso(msg);
+  }
+
+  async function entrar(email, password) {
+    const b = $('ac-btn');
+    b.disabled = true; b.textContent = 'Entrando…';
+    $('ac-err').hidden = true;
+    let msg;
+    try {
+      const r = await api({ email, password });
+      if (r.ok && r.j.token) {
+        try { sessionStorage.setItem(TOKEN_KEY, r.j.token); } catch (e) { /* modo privado */ }
+        abrirCotizador(r.j, r.j.token);
+        return;
+      }
+      msg = r.status === 401 ? 'Correo o contraseña incorrectos.'
+        : r.status === 429 ? 'Demasiados intentos. Espera 15 minutos.'
+        : r.status === 503 ? 'El acceso aún no está configurado en el servidor.'
+        : 'No se pudo validar el acceso (' + r.status + ').';
+    } catch (e) {
+      msg = 'Sin conexión con el servidor.';
+    }
+    mostrarAcceso(msg);
+  }
+
+  async function restaurar() {
+    let token = null;
+    try { token = sessionStorage.getItem(TOKEN_KEY); } catch (e) { /* nada */ }
+    if (!token) return mostrarAcceso();
+    try {
+      const r = await api({ token });
+      if (r.ok) return abrirCotizador(r.j, token);
+      sessionStorage.removeItem(TOKEN_KEY);
+    } catch (e) { /* sin red */ }
+    mostrarAcceso();
   }
 
   // ---------- Encabezado, pasos y resumen ----------
@@ -52,56 +132,50 @@
     const p = S.cfg.proyecto;
     $('sub').textContent = p.cluster;
     $('top-der').innerHTML =
-      '<span class="lista">' + esc(p.lista) + '</span>' +
-      '<span class="tag tag-outline">Válida ' + S.cfg.vigenciaDias + ' días</span>' +
-      (S.gerente
-        ? '<span class="tag tag-accent">Gerente · vendidas habilitadas</span><button type="button" class="btn btn-ghost" data-acc="salir">Salir</button>'
-        : '<button type="button" class="btn" data-acc="login">Gerente</button>');
-    document.body.classList.toggle('es-gerente', !!S.gerente);
+      '<span class="chip lista">' + esc(S.lista || p.lista) + '</span>' +
+      '<span class="chip gold">Vigencia ' + dias() + ' días</span>' +
+      '<button type="button" class="btn btn-sm" data-acc="salir">Salir</button>';
   }
 
   function renderPasos() {
-    $('pasos').innerHTML = ['Lote', 'Esquema', 'Cotización'].map((t, i) =>
-      '<button type="button" class="sel" data-acc="paso" data-v="' + (i + 1) + '" aria-pressed="' + (S.paso === i + 1) + '">' +
-      '<span class="n">0' + (i + 1) + '</span><span class="t">' + t + '</span></button>').join('');
+    $('pasos').innerHTML = ['Lote', 'Esquema', 'Cotización'].map((t, i) => {
+      const n = i + 1;
+      const hecho = (n === 1 && S.lote) || (n === 2 && S.paso === 3);
+      return '<button type="button" data-acc="paso" data-v="' + n + '" aria-pressed="' + (S.paso === n) + '"' + (hecho && S.paso !== n ? ' class="hecho"' : '') + '>' +
+        '<span class="n">' + (hecho && S.paso !== n ? '✓' : n) + '</span><span>' + t + '</span></button>';
+    }).join('');
   }
 
   function renderAside() {
     const L = S.lote, e = esq(), c = calc();
-    const filas = [];
-    const f = (k, v, b) => filas.push('<div><span>' + esc(k) + '</span><span>' + (b ? '<b>' + esc(v) + '</b>' : esc(v)) + '</span></div>');
-    if (L) {
-      f('Prototipo', L.tipo === '2R' ? '2 recámaras' : '3 recámaras');
-      f('Terreno', L.m2.toFixed(2) + ' m²');
-      f('Precio de lista', C.mx(precioDe(L)), true);
-    }
-    if (c) {
-      f('Esquema', e.nombre);
-      if (c.D > 0) f('Descuento ' + c.desc + '%', '−' + C.mx(c.D));
-      f('Precio final', C.mx(c.F), true);
-      f('Pago inicial', C.mx(c.inicial));
-      if (c.m1 > 0) f(c.m1 + ' mens. primer ' + c.p1 + '%', C.mx(c.mens1));
-      if (c.flex) {
-        if (c.m2 > 0) f(c.m2 + ' mensualidades fijas', C.mx(c.mens2));
-        f(c.saldoEntrega ? 'Contra entrega' : 'A escritura', C.mx(c.esc), true);
+    let h = '<div class="res"><div class="res-cab"><div class="res-k">Resumen</div>';
+    if (!L) {
+      h += '<div class="res-t"><b>Sin lote</b></div></div><div class="res-vacio">Elige una casa en el plano o en la lista para empezar.</div></div>';
+    } else {
+      h += '<div class="res-t"><b>' + esc(L.lote) + '</b><span>' + tipoTxt(L.tipo) + ' · ' + L.m2.toFixed(2) + ' m²</span></div></div>';
+      if (c) {
+        h += '<div class="res-precio"><div class="k">Precio final · ' + esc(e.nombre) + '</div><div class="v">' + C.mx(c.F) + '</div>' +
+          (c.D > 0 ? '<div class="t">' + C.mx(c.P) + '</div>' : '') + '</div>';
+        const seg = [[c.pri, '#d9c49a'], [c.seg, '#5fa3c4'], [c.esc, 'rgba(255,255,255,.35)']];
+        h += '<div class="barra-pct">' + seg.map(([v, col]) => v > 0 ? '<i style="width:' + (v / c.F * 100).toFixed(2) + '%;background:' + col + '"></i>' : '').join('') + '</div>';
+        const f = [];
+        const fila = (k, v, fuerte) => f.push('<div' + (fuerte ? ' class="fuerte"' : '') + '><span>' + esc(k) + '</span><span>' + esc(v) + '</span></div>');
+        if (c.D > 0) fila('Descuento ' + c.desc + '%', '−' + C.mx(c.D));
+        fila('Apartado', C.mx(c.ap));
+        if (c.m1 > 0) fila(c.m1 + ' mens. enganche ' + c.p1 + '%', C.mx(c.mens1));
+        if (c.m2 > 0) fila(c.flex ? c.m2 + ' mensualidades fijas' : c.m2 + ' mens. segundo ' + c.p2 + '%', C.mx(c.mens2));
+        fila(c.flex && c.saldoEntrega ? 'Contra entrega ' + c.pe + '%' : 'A escritura ' + c.pe + '%', C.mx(c.esc), true);
+        h += '<div class="res-filas">' + f.join('') + '</div></div>';
       } else {
-        if (c.m2 > 0) f(c.m2 + ' mens. segundo ' + c.p2 + '%', C.mx(c.mens2));
-        f('A escritura', C.mx(c.esc), true);
+        h += '<div class="res-vacio">Precio no disponible para esta casa.</div></div>';
       }
     }
-    const cta = S.paso === 3 ? 'Volver al plano' : (S.paso === 2 ? 'Ver cotización' : 'Elegir esquema');
-    $('aside').innerHTML =
-      '<div class="card bp">' + K +
-        '<span class="res-k">Resumen</span>' +
-        '<span class="res-t">' + (L ? esc(L.lote) : 'Sin lote') + '</span>' +
-        '<span class="res-s">' + (L ? esc(L.nombre) : 'Elige un lote en el plano') + '</span>' +
-        '<div class="res-filas">' + filas.join('') + '</div>' +
-      '</div>' +
-      '<div class="acciones">' +
-        '<button type="button" class="btn btn-primary bp" data-acc="siguiente">' + K + cta + '</button>' +
-        (S.paso === 3 ? '<button type="button" class="btn" data-acc="generar"' + (c ? '' : ' disabled') + '>Generar cotización</button>' : '') +
-      '</div>' +
-      '<p class="pie">' + esc((L && L.vendida ? texto('legalVendida') + '. ' : '') + (e && e.tipo === 'flexible' ? texto('legalPersonalizado') + ' ' : '') + texto('pieLegal')) + '</p>';
+    const cta = S.paso === 3 ? 'Nueva cotización' : (S.paso === 2 ? 'Ver cotización' : 'Elegir esquema');
+    h += '<div class="acciones">' +
+      (S.paso === 3 ? '<button type="button" class="btn btn-gold" data-acc="generar"' + (c ? '' : ' disabled') + '>Generar PDF</button>' : '') +
+      '<button type="button" class="btn ' + (S.paso === 3 ? '' : 'btn-primary') + '" data-acc="siguiente">' + cta + '</button></div>' +
+      '<p class="pie">' + esc(legales().map(t => t + '.').concat(texto('pieLegal')).join(' ')) + '</p>';
+    $('aside').innerHTML = h;
   }
 
   // ---------- Paso 1: plano y lotes ----------
@@ -116,14 +190,12 @@
     const vend = !!(lo && lo.vendida);
     const filtro = S.filtro === '2R' || S.filtro === '3R' ? S.filtro : null;
     const marcado = !!(filtro && lo && lo.tipo === filtro && !vend);
-    const apagado = !!(filtro && !marcado && !sel);
-    const r = sel ? 13 : (marcado ? 11.5 : 10);
+    const apagado = !!((filtro && !marcado && !sel) || (S.filtro === 'disp' && vend && !sel));
+    const r = sel ? 13.5 : (marcado ? 11.5 : 10);
+    const col = sel ? COL.sel : vend ? COL.vend : COL[lo ? lo.tipo : '3R'];
     return {
-      lo, sel, r, op: apagado ? 0.28 : 1,
-      bw: (sel ? 1.6 : marcado ? 1.8 : 1.4) + 'px',
-      fill: sel ? '#14304d' : (vend ? '#c8c9cb' : lo && lo.tipo === '2R' ? '#c2a878' : '#6d4a5c'),
-      stroke: sel ? '#14304d' : (vend ? '#9a9da1' : lo && lo.tipo === '2R' ? '#8a7448' : '#432c38'),
-      fg: sel ? '#ffffff' : (vend ? '#55585c' : lo && lo.tipo === '2R' ? '#33280f' : '#ffffff'),
+      lo, sel, r, op: apagado ? 0.25 : 1, bw: (sel ? 2 : 1.4) + 'px',
+      fill: col[0], stroke: col[1], fg: col[2],
       titulo: lo ? lo.lote + ' · ' + lo.tipo + (vend ? ' · Vendida' : '') : 'Lote ' + n,
       cursor: puedeElegir(lo) ? 'pointer' : 'not-allowed'
     };
@@ -139,7 +211,8 @@
         'font-size:clamp(7px,' + (p.r * 1.15 / W * 100).toFixed(3) + 'vw,15px);opacity:' + p.op + ';cursor:' + p.cursor + ';' +
         'background:' + p.fill + ';color:' + p.fg + ';border-width:' + p.bw + ';border-color:' + p.stroke + '">' + n + '</button>';
     }).join('');
-    return '<div class="plano"><img src="' + IMG[S.modo] + '" alt="Sembrado ' + esc(S.cfg.proyecto.cluster) + '" width="' + (S.modo === 'render' ? 2752 : 2448) + '" height="' + (S.modo === 'render' ? 1724 : 1584) + '">' + btns + '</div>';
+    const ancho = S.modo === 'render' ? 2752 : 2448, alto = S.modo === 'render' ? 1724 : 1584;
+    return '<div class="plano"><img src="' + IMG[S.modo] + '" alt="Sembrado ' + esc(S.cfg.proyecto.cluster) + '" width="' + ancho + '" height="' + alto + '">' + btns + '</div>';
   }
 
   function htmlZoom() {
@@ -150,152 +223,135 @@
     const zw = 300, zh = 194;
     const zx = Math.max(0, Math.min(W - zw, p[1] - zw / 2));
     const zy = Math.max(0, Math.min(H - zh, p[2] - zh / 2));
-    const cerca = pts.filter(q => q[1] > zx - 20 && q[1] < zx + zw + 20 && q[2] > zy - 20 && q[2] < zy + zh + 20);
-    const marcas = cerca.map(([n, x, y]) => {
+    const marcas = pts.filter(q => q[1] > zx - 20 && q[1] < zx + zw + 20 && q[2] > zy - 20 && q[2] < zy + zh + 20).map(([n, x, y]) => {
       const s = pinEstilo(n);
       const r = s.r * 0.62;
       return '<span class="pin" style="left:' + pct(x - zx, zw) + ';top:' + pct(y - zy, zh) + ';width:' + pct(r * 2, zw) + ';height:' + pct(r * 2, zh) + ';' +
         'font-size:clamp(7px,' + (r * 1.15 / zw * 100).toFixed(3) + 'vw,13px);opacity:' + s.op + ';background:' + s.fill + ';color:' + s.fg + ';border-width:1px;border-color:' + s.stroke + '">' + n + '</span>';
     }).join('');
-    return '<div class="card bp">' + K +
-      '<div class="card-top"><h2 class="h2">Ubicación del lote</h2><span class="muted" style="font-size:12px">Detalle del plano · ' + esc(L.lote) + '</span></div>' +
+    return '<div class="card"><div class="card-top"><div><h2 class="h2">Ubicación de ' + esc(L.lote) + '</h2><p class="sub2">Entrega estimada ' + esc(C.mesAnio(L.entrega)) + '</p></div>' +
+      (L.vendida ? '<span class="chip off">Vendida</span>' : '<span class="chip ok">Disponible</span>') + '</div>' +
       '<div class="zoom" style="aspect-ratio:' + (zw / zh).toFixed(4) + '">' +
-        '<img src="' + IMG[S.modo] + '" alt="Detalle del sembrado" style="left:' + pct(-zx, zw) + ';top:' + pct(-zy, zh) + ';width:' + pct(W, zw) + ';height:' + pct(H, zh) + '">' +
-        marcas +
-      '</div></div>';
+      '<img src="' + IMG[S.modo] + '" alt="Detalle del sembrado" style="left:' + pct(-zx, zw) + ';top:' + pct(-zy, zh) + ';width:' + pct(W, zw) + ';height:' + pct(H, zh) + '">' +
+      marcas + '</div></div>';
   }
 
   function vistaLote() {
     const disp = S.lotes.filter(l => !l.vendida).length;
-    const filtro = S.filtro === '2R' || S.filtro === '3R' ? S.filtro : null;
-    const vistas = [['color', 'Color'], ['bn', 'B/N'], ['render', 'Render']].map(([k, t]) =>
-      '<button type="button" class="sel" data-acc="modo" data-v="' + k + '" aria-pressed="' + (S.modo === k) + '">' + t + '</button>').join('');
-    const filtros = [['todos', 'Todos'], ['2R', '2 rec'], ['3R', '3 rec']].map(([k, t]) =>
-      '<button type="button" class="sel" data-acc="filtro" data-v="' + k + '" aria-pressed="' + (S.filtro === k) + '">' + t + '</button>').join('');
-    const lotes = S.lotes.filter(l => !filtro || l.tipo === filtro).map(l => {
+    const filtro = S.filtro;
+    const seg = (acc, op, act) => '<div class="seg" role="group">' + op.map(([k, t]) =>
+      '<button type="button" data-acc="' + acc + '" data-v="' + k + '" aria-pressed="' + (act === k) + '">' + t + '</button>').join('') + '</div>';
+    const lotes = S.lotes.filter(l => filtro === 'todos' || (filtro === 'disp' ? !l.vendida : l.tipo === filtro)).map(l => {
       const sel = !!(S.lote && S.lote.num === l.num);
-      const precio = precioDe(l);
-      const estado = l.vendida ? (sel ? 'Vendida · Seleccionado' : 'Vendida') : (sel ? 'Seleccionado' : 'Disponible');
-      return '<button type="button" class="sel lote' + (l.vendida ? ' vendida' : '') + '" data-acc="lote" data-v="' + l.num + '" aria-pressed="' + sel + '"' +
-        (puedeElegir(l) ? '' : ' aria-disabled="true" title="' + esc(l.lote + ' · ' + l.tipo + ' · Vendida') + '"') + '>' +
-        '<span class="lt">' + esc(l.lote) + '</span>' +
-        '<span class="m">' + l.tipo + ' · ' + l.m2.toFixed(2) + ' m²</span>' +
-        '<span class="p">' + (precio != null ? C.mx(precio) : '') + '</span>' +
-        '<span class="e">' + estado + '</span></button>';
+      const col = l.vendida ? COL.vend : COL[l.tipo];
+      return '<button type="button" class="lote' + (l.vendida ? ' vendida' : '') + '" data-acc="lote" data-v="' + l.num + '" aria-pressed="' + sel + '"' +
+        (puedeElegir(l) ? '' : ' aria-disabled="true" title="Sin precio de casa vendida"') + '>' +
+        '<span class="fila"><span class="lt">' + esc(l.lote) + '</span>' + (l.vendida ? '<span class="chip off">Vendida</span>' : '<span class="dot" style="background:' + col[0] + '"></span>') + '</span>' +
+        '<span class="m">' + tipoTxt(l.tipo) + ' · ' + l.m2.toFixed(2) + ' m²</span>' +
+        '<span class="p">' + (l.precio != null ? C.mx(l.precio) : '—') + '</span></button>';
     }).join('');
-
-    return '<div class="card bp">' + K +
-        '<div class="card-top"><h2 class="h2">Sembrado ' + esc(S.cfg.proyecto.cluster) + '</h2>' +
-          '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><div class="vistas" role="group" aria-label="Vista del plano">' + vistas + '</div>' +
-          '<span class="muted" style="font-size:12px">' + disp + ' disponibles de ' + S.lotes.length + '</span></div></div>' +
+    const ley = (c, t) => '<span><i class="dot" style="background:' + c[0] + ';box-shadow:0 0 0 1.5px ' + c[1] + '"></i>' + t + '</span>';
+    return '<div class="card">' +
+        '<div class="card-top"><div><h2 class="h2">Sembrado ' + esc(S.cfg.proyecto.cluster) + '</h2><p class="sub2">' + disp + ' disponibles de ' + S.lotes.length + ' · toca un número para elegir</p></div>' +
+        seg('modo', [['color', 'Plano'], ['bn', 'B/N'], ['render', 'Render']], S.modo) + '</div>' +
         htmlPlano() +
-        '<div class="leyenda">' +
-          '<span><i style="background:#c2a878;border-color:#8a7448"></i>2 recámaras</span>' +
-          '<span><i style="background:#6d4a5c;border-color:#432c38"></i>3 recámaras</span>' +
-          '<span><i style="background:#14304d;border-color:#14304d"></i>Seleccionado</span>' +
-          '<span><i style="background:#c8c9cb;border-color:#9a9da1"></i>Vendido</span>' +
-          (filtro ? '<span style="color:var(--text)">Resaltando ' + (filtro === '2R' ? '2 recámaras' : '3 recámaras') + '</span>' : '') +
-        '</div>' +
+        '<div class="leyenda">' + ley(COL['2R'], '2 recámaras') + ley(COL['3R'], '3 recámaras') + ley(COL.sel, 'Seleccionada') + ley(COL.vend, 'Vendida') + '</div>' +
       '</div>' +
       htmlZoom() +
-      '<div class="card bp">' + K +
-        '<div class="card-top" style="align-items:center"><h2 class="h2">Lotes</h2><div class="filtros">' + filtros + '</div></div>' +
-        '<div class="lotes">' + lotes + '</div>' +
-      '</div>';
+      '<div class="card"><div class="card-top"><h2 class="h2">Casas</h2>' +
+        seg('filtro', [['todos', 'Todas'], ['disp', 'Disponibles'], ['2R', '2 rec'], ['3R', '3 rec']], filtro) + '</div>' +
+        '<div class="lotes">' + lotes + '</div></div>';
   }
 
   // ---------- Paso 2: esquemas y ajustes ----------
-  function notaEng() {
+  function notaCalc() {
     const c = calc(), e = esq();
-    if (c && c.flex) {
+    if (!c) return '';
+    if (c.flex) {
       const ent = S.lote && S.lote.entrega ? C.mesAnio(S.lote.entrega) : '';
-      let t = 'Enganche ' + c.p1 + '%: ' + C.mx(c.pri) + ' (apartado ' + C.mx(c.ap) + (c.m1 ? ' + ' + c.m1 + ' × ' + C.mx(c.mens1) : '') + '). ';
-      t += c.m2 > 0 ? c.m2 + ' mensualidades de ' + C.mx(c.mens2) + ' = ' + C.mx(c.seg) + ' (' + c.p2 + '%). ' : 'Sin mensualidades fijas. ';
-      t += (c.saldoEntrega ? 'Saldo contra entrega' + (ent ? ' (' + ent + ')' : '') : 'Saldo a escritura') + ': ' + C.mx(c.esc) + ' (' + c.pe + '%).';
-      if (c.recortado) t += ' Ojo: el número de mensualidades se recortó para no rebasar el precio.';
+      let t = '<b>Enganche ' + c.p1 + '%:</b> ' + C.mx(c.pri) + ' (apartado ' + C.mx(c.ap) + (c.m1 ? ' + ' + c.m1 + ' × ' + C.mx(c.mens1) : '') + '). ';
+      t += c.m2 > 0 ? '<b>' + c.m2 + ' mensualidades</b> de ' + C.mx(c.mens2) + ' = ' + C.mx(c.seg) + ' (' + c.p2 + '%). ' : 'Sin mensualidades fijas. ';
+      t += '<b>' + (c.saldoEntrega ? 'Contra entrega' + (ent ? ' (' + ent + ')' : '') : 'A escritura') + ':</b> ' + C.mx(c.esc) + ' (' + c.pe + '%).';
+      if (c.recortado) t += ' <b style="color:var(--warn)">El número de mensualidades se recortó para no rebasar el precio.</b>';
       return t;
     }
-    if (c && c.engOn) {
-      return 'Enganche personalizado: ' + C.mx(c.pri) + ' (' + c.p1 + '% del precio final). ' +
-        (c.seg > 0 ? 'El 2º complemento de ' + C.mx(c.seg) + ' completa el ' + c.pt + '%.' : 'Cubre el ' + (e.pct.primero + e.pct.segundo) + '% o más: no lleva 2º complemento y el excedente reduce el saldo a escritura.');
+    if (c.engOn) {
+      return '<b>Enganche personalizado:</b> ' + C.mx(c.pri) + ' (' + c.p1 + '% del precio final). ' +
+        (c.seg > 0 ? 'El 2º complemento de ' + C.mx(c.seg) + ' completa el ' + c.pt + '%.' : 'Cubre el ' + (e.pct.primero + e.pct.segundo) + '% o más: el excedente reduce el saldo a escritura.');
     }
-    if (e && e.apartadoTodo && c) return 'Apartado = ' + c.p1 + '% del precio final (' + C.mx(c.ap) + ')';
+    if (e.apartadoTodo) return '<b>Apartado</b> = ' + c.p1 + '% del precio final (' + C.mx(c.ap) + ').';
     return '';
+  }
+
+  function stats(s) {
+    const ch = (t, cls) => '<span class="chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>';
+    if (s.tipo === 'flexible') return ch('Tú decides montos y plazos', 'gold') + ch('Contra entrega');
+    return ch('Apartado ' + s.apartadoTxt) + ch(s.saldo) + (s.descuento ? ch('Hasta ' + s.descuento + '% desc.', 'gold') : '');
   }
 
   function vistaEsquema() {
     const e = esq(), c = calc(), x = C.entradas(e, ajustes());
-    const L = S.limites || S.cfg.limites;
+    const L = S.cfg.limites;
     const tarjetas = S.cfg.esquemas.lista.map(s =>
-      '<button type="button" class="sel esq" data-acc="esquema" data-v="' + esc(s.id) + '" aria-pressed="' + (s.id === e.id) + '">' +
-        '<span class="nom">' + esc(s.nombre) + '</span>' +
+      '<button type="button" class="esq' + (s.tipo === 'flexible' ? ' flex' : '') + '" data-acc="esquema" data-v="' + esc(s.id) + '" aria-pressed="' + (s.id === e.id) + '">' +
+        '<span class="cab"><span class="radio"></span><span><span class="nom">' + esc(s.nombre) + '</span></span></span>' +
         '<span class="int">' + esc(s.integracion) + '</span>' +
-        '<span class="det">Apartado: ' + esc(s.apartadoTxt) + '</span>' +
-        '<span class="det">' + esc(s.saldo) + '</span></button>').join('');
-    const campo = (id, etq, attrs) => '<div class="field"><label for="pp-' + id + '">' + etq + '</label><input id="pp-' + id + '" class="input" data-campo="' + id + '" ' + attrs + '></div>';
-    const sw = (acc, on, etq) => '<div class="field"><label>' + etq + '</label><button type="button" class="switch" data-acc="' + acc + '" aria-pressed="' + on + '" aria-label="' + etq + '"><span class="pista"><span class="bola"></span></span></button></div>';
-    const editaM1 = !!(c ? c.resto > 0 : (!e.apartadoTodo && e.m1 > 0));
-    const engValor = c ? String(Math.round(c.pri * 100) / 100) : '';
+        '<span class="stats">' + stats(s) + '</span></button>').join('');
+    const campo = (id, etq, attrs, pre, suf, val) => '<div class="field"><label for="pp-' + id + '">' + etq + '</label><div class="inp">' +
+      (pre ? '<span class="pre">' + pre + '</span>' : '') + '<input id="pp-' + id + '" data-campo="' + id + '" ' + attrs + ' value="' + esc(val) + '">' +
+      (suf ? '<span class="suf">' + suf + '</span>' : '') + '</div></div>';
+    const sw = (acc, on, etq, txt) => '<div class="field"><span class="lbl">' + etq + '</span><button type="button" class="switch" data-acc="' + acc + '" aria-pressed="' + on + '" aria-label="' + etq + '"><span class="pista"><span class="bola"></span></span>' + txt + '</button></div>';
+    const num = 'type="number" inputmode="decimal"';
 
-    let f = sw('desc', S.descOn, 'Aplicable a descuento');
+    let f = sw('desc', S.descOn, 'Descuento', S.descOn ? 'Aplicado' : 'Sin descuento');
+    if (S.descOn) f += campo('desc', 'Descuento aplicado', num + ' min="0" max="' + L.descuentoMax + '" step="0.5"', '', '%', x.desc);
     if (e.tipo === 'flexible') {
-      if (S.descOn) f += campo('desc', 'Descuento aplicado (%)', 'type="number" inputmode="decimal" min="0" max="' + L.descuentoMax + '" step="0.5" value="' + x.desc + '"');
-      f += campo('ap', 'Apartado / anticipo ($)', 'type="number" inputmode="numeric" min="0" step="1000" value="' + x.ap + '"');
-      f += campo('pct1', '1er enganche (% del precio final)', 'type="number" inputmode="decimal" min="0" max="100" step="0.5" value="' + x.pct1 + '"');
-      if (!c || c.resto > 0) f += campo('m1', 'Meses para completar el enganche', 'type="number" inputmode="numeric" min="1" max="' + L.plazoMax + '" step="1" value="' + x.m1 + '"');
-      f += campo('mens', 'Mensualidad fija ($)', 'type="number" inputmode="numeric" min="0" step="500" value="' + x.mens + '"');
-      f += campo('m2', 'Número de mensualidades', 'type="number" inputmode="numeric" min="0" max="' + L.mensualidadesMax + '" step="1" placeholder="' + (c ? 'Hasta la entrega: ' + c.mensAuto : 'Hasta la entrega') + '" value="' + (S.aj.m2 != null ? S.aj.m2 : '') + '"');
-      f += '<div class="field"><label>Saldo final</label><div class="vistas" role="group" aria-label="Saldo final" style="height:36px">' +
+      f += campo('ap', 'Apartado / anticipo', num + ' min="0" step="1000"', '$', '', x.ap);
+      f += campo('pct1', 'Enganche total', num + ' min="0" max="100" step="0.5"', '', '% del precio', x.pct1);
+      if (!c || c.resto > 0) f += campo('m1', 'Meses para completar enganche', num + ' min="1" max="' + L.plazoMax + '" step="1"', '', 'meses', x.m1);
+      f += campo('mens', 'Mensualidad fija', num + ' min="0" step="500"', '$', '', x.mens);
+      f += campo('m2', 'Número de mensualidades', num + ' min="0" max="' + L.mensualidadesMax + '" step="1" placeholder="' + (c ? 'Hasta la entrega: ' + c.mensAuto : 'Hasta la entrega') + '"', '', 'meses', S.aj.m2 != null ? S.aj.m2 : '');
+      f += '<div class="field"><span class="lbl">Saldo final</span><div class="seg full" style="height:44px;align-items:center">' +
         [['entrega', 'Contra entrega'], ['escritura', 'A escritura']].map(([k, t]) =>
-          '<button type="button" class="sel" data-acc="saldo" data-v="' + k + '" aria-pressed="' + (x.saldo === k) + '" style="flex:1;white-space:nowrap;padding:6px 8px">' + t + '</button>').join('') + '</div></div>';
-      f += campo('inicio', 'Fecha de apartado', 'type="date" value="' + esc(S.inicio) + '"');
-      return htmlEsquemas(tarjetas, f, texto('notaFlexible'));
+          '<button type="button" data-acc="saldo" data-v="' + k + '" aria-pressed="' + (x.saldo === k) + '" style="height:38px">' + t + '</button>').join('') + '</div></div>';
+    } else {
+      const editaM1 = !!(c ? c.resto > 0 : (!e.apartadoTodo && e.m1 > 0));
+      if (!e.apartadoTodo) f += campo('ap', 'Anticipo de apartado', num + ' min="0" step="1000"', '$', '', x.ap);
+      if (e.engLibre) f += sw('eng', !!S.aj.engOn, 'Enganche personalizado', S.aj.engOn ? 'Activo' : 'No');
+      if (e.engLibre && S.aj.engOn) f += campo('eng', 'Monto del 1er enganche', num + ' min="0" step="1000"', '$', '', c ? Math.round(c.pri * 100) / 100 : '');
+      if (editaM1) f += campo('m1', 'Plazo 1er enganche', num + ' min="1" max="' + L.plazoMax + '" step="1"', '', 'meses', x.m1);
+      if (e.pct.segundo > 0) f += campo('m2', 'Plazo 2º enganche', num + ' min="1" max="' + L.plazoMax + '" step="1"', '', 'meses', x.m2);
     }
-    if (S.descOn) f += campo('desc', 'Descuento aplicado (%)', 'type="number" inputmode="decimal" min="0" max="' + L.descuentoMax + '" step="0.5" value="' + x.desc + '"');
-    if (!e.apartadoTodo) f += campo('ap', 'Anticipo apartado 1er pago ($)', 'type="number" inputmode="numeric" min="0" step="1000" value="' + x.ap + '"');
-    if (e.engLibre) f += sw('eng', !!S.aj.engOn, 'Enganche personalizado');
-    if (e.engLibre && S.aj.engOn) f += campo('eng', 'Monto del 1er enganche ($)', 'type="number" inputmode="numeric" min="0" step="1000" value="' + engValor + '"');
-    if (editaM1) f += campo('m1', 'Plazo complemento 1er enganche (meses)', 'type="number" inputmode="numeric" min="1" max="' + L.plazoMax + '" step="1" value="' + x.m1 + '"');
-    if (e.pct.segundo > 0) f += campo('m2', 'Plazo complemento 2º enganche (meses)', 'type="number" inputmode="numeric" min="1" max="' + L.plazoMax + '" step="1" value="' + x.m2 + '"');
-    f += campo('inicio', 'Fecha de apartado', 'type="date" value="' + esc(S.inicio) + '"');
-    return htmlEsquemas(tarjetas, f, texto('notaPlazos'));
-  }
+    f += '<div class="field"><label for="pp-inicio">Fecha de apartado</label><div class="inp"><input id="pp-inicio" data-campo="inicio" type="date" value="' + esc(S.inicio) + '"></div></div>';
 
-  function htmlEsquemas(tarjetas, f, pie) {
-    return '<div class="card bp">' + K +
-        '<h2 class="h2" style="margin-bottom:4px">Esquema de venta</h2>' +
-        '<p class="nota">' + esc(S.cfg.esquemas.reglas[0] || '') + '</p>' +
-        '<div class="esquemas">' + tarjetas + '</div>' +
-      '</div>' +
-      '<div class="card bp">' + K +
-        '<h2 class="h2" style="margin-bottom:16px">Ajustes del esquema</h2>' +
-        (S.lote ? '' : '<p class="nota" style="color:var(--text)">Elige un lote en el paso 01 para ver los importes.</p>') +
+    return '<div class="card"><div class="card-top"><div><h2 class="h2">Esquema de pago</h2><p class="sub2">' + esc(S.cfg.esquemas.reglas[0] || '') + ' Sin intereses.</p></div></div>' +
+        '<div class="esquemas">' + tarjetas + '</div></div>' +
+      '<div class="card"><div class="card-top"><div><h2 class="h2">Ajustes</h2><p class="sub2">' + esc(e.nombre) + '</p></div></div>' +
+        (S.lote ? '' : '<p class="nota-calc">Elige una casa en el paso 1 para ver los importes.</p>') +
         '<div class="ajustes">' + f + '</div>' +
-        '<p class="nota-eng" id="nota-eng">' + esc(notaEng()) + '</p>' +
-        '<p class="nota-pie">' + esc(pie) + '</p>' +
-      '</div>';
+        '<p class="nota-calc" id="nota-calc">' + notaCalc() + '</p>' +
+        '<p class="nota-pie">' + esc(e.tipo === 'flexible' ? texto('notaFlexible') : texto('notaPlazos')) + '</p></div>';
   }
 
   // ---------- Paso 3: cotización ----------
   function tramos(c, e) {
     const t = [];
-    const fila = (k, sub, p, pagos, v) => t.push({ k, sub, p, pagos, v });
+    const fila = (k, sub, p, pagos, v, cls) => t.push({ k, sub, p, pagos, v, cls });
     fila('Precio de venta', 'Lista vigente', '', '', C.mxf(c.P));
     if (c.D > 0) fila('Descuento aplicado', c.desc + '% sobre precio de venta', '', '', '−' + C.mxf(c.D));
-    fila('Precio final', 'Base de cálculo del esquema', '', '', C.mxf(c.F));
-    if (c.ap > 0) fila('Anticipo apartado', 'Forma parte del 1er enganche', '—', '1', C.mxf(c.ap));
-    if (c.m1 > 0) fila('Primer ' + c.p1 + '%', c.m1 + ' mensualidades de ' + C.mx(c.mens1), c.p1 + '%', String(c.m1), C.mx(c.resto));
+    fila('Precio final', 'Base de cálculo del esquema', '', '', C.mxf(c.F), 'total');
+    if (c.ap > 0) fila('Anticipo de apartado', 'Forma parte del enganche', '—', '1', C.mxf(c.ap));
+    if (c.m1 > 0) fila((c.flex ? 'Resto del enganche ' : 'Primer ') + c.p1 + '%', c.m1 + ' mensualidades de ' + C.mx(c.mens1), c.p1 + '%', String(c.m1), C.mx(c.resto));
     else if (c.resto > 0) fila('Pago inicial ' + c.p1 + '%', 'Un solo pago', c.p1 + '%', '1', C.mx(c.resto));
     if (c.flex) {
       if (c.m2 > 0) fila('Mensualidades fijas', c.m2 + ' mensualidades de ' + C.mx(c.mens2), c.p2 + '%', String(c.m2), C.mx(c.seg));
-      if (c.saldoEntrega) fila('Saldo contra entrega', 'Entrega estimada ' + C.mesAnio(c.entrega), c.pe + '%', '1', C.mxf(c.esc));
-      else fila('Saldo a escritura', c.pe + '% a escritura', c.pe + '%', '1', C.mxf(c.esc));
+      fila(c.saldoEntrega ? 'Saldo contra entrega' : 'Saldo a escritura', c.saldoEntrega ? 'Entrega estimada ' + C.mesAnio(c.entrega) : c.pe + '% a escritura', c.pe + '%', '1', C.mxf(c.esc), 'final');
     } else {
       if (c.m2 > 0) fila('Segundo ' + c.p2 + '%', c.m2 + ' mensualidades de ' + C.mx(c.mens2), c.p2 + '%', String(c.m2), C.mx(c.seg));
       else if (c.seg > 0) fila('Diferido ' + c.p2 + '%', 'Un solo pago', c.p2 + '%', '1', C.mx(c.seg));
-      fila('Saldo a escritura', c.engOn ? c.pe + '% a escritura' : e.saldo, c.pe + '%', '1', C.mxf(c.esc));
+      fila('Saldo a escritura', c.engOn ? c.pe + '% a escritura' : e.saldo, c.pe + '%', '1', C.mxf(c.esc), 'final');
     }
-    fila('Total', 'Precio final', '100%', '', C.mxf(c.F));
+    fila('Total', 'Precio final', '100%', '', C.mxf(c.F), 'total');
     return t;
   }
 
@@ -304,58 +360,58 @@
     const base = precioDe(L);
     const pv = C.plusvalia(base, L.entrega, S.cfg.plusvalia, new Date());
     const maxA = Math.max.apply(null, pv.anios.map(a => a.opt).concat([1]));
-    const barras = pv.anios.map(a => ({ anio: String(a.a).slice(2), et: C.mxc(a.con), h: (a.opt / maxA * 100).toFixed(1) + '%', hc: (a.con / a.opt * 100).toFixed(1) + '%' }));
+    const barras = pv.anios.map(a => ({ anio: String(a.a), et: C.mxc(a.con), h: (a.opt / maxA * 100).toFixed(1) + '%', hc: (a.con / a.opt * 100).toFixed(1) + '%' }));
     const delta = v => '+' + ((v / base - 1) * 100).toFixed(1) + '%';
     const ent = pv.entTxt || '—';
-    const proy = [
-      { k: 'Hoy · ' + pv.y0, v: C.mx(base), d: 'Precio de lista', bar: '#b7b7ba' },
-      { k: 'Entrega · ' + ent + ' · conservador', v: C.mx(pv.entCon), d: delta(pv.entCon), bar: 'var(--accent-700)' },
-      { k: 'Entrega · ' + ent + ' · optimista', v: C.mx(pv.entOpt), d: delta(pv.entOpt), bar: 'var(--accent-300)' },
-      { k: '+5 años · ' + (pv.y0 + 5) + ' · optimista', v: C.mx(pv.cinco), d: delta(pv.cinco), bar: 'var(--accent-300)' }
-    ];
-    return { barras, proy, leyenda: 'Apreciación anual compuesta · conservador ' + pv.tCon + '% · optimista ' + pv.tOpt + '%' };
+    return {
+      barras,
+      proy: [
+        { k: 'Hoy · ' + pv.y0, v: C.mx(base), d: 'Precio de lista', base: true },
+        { k: 'Entrega ' + ent + ' · conservador', v: C.mx(pv.entCon), d: delta(pv.entCon) },
+        { k: 'Entrega ' + ent + ' · optimista', v: C.mx(pv.entOpt), d: delta(pv.entOpt) },
+        { k: '+5 años · ' + (pv.y0 + 5) + ' · optimista', v: C.mx(pv.cinco), d: delta(pv.cinco) }
+      ],
+      leyenda: 'Apreciación anual compuesta · conservador ' + pv.tCon + '% · optimista ' + pv.tOpt + '%'
+    };
   }
 
   function vistaCotizacion() {
     const c = calc(), e = esq();
-    const campo = (id, etq, tipo, ph) => '<div class="field"><label for="pp-' + id + '">' + etq + '</label><input id="pp-' + id + '" class="input" data-campo="' + id + '" type="' + tipo + '" placeholder="' + ph + '" value="' + esc(S[id]) + '"' + (tipo === 'tel' ? ' autocomplete="tel"' : tipo === 'email' ? ' autocomplete="email"' : '') + '></div>';
-    let h = '<div class="card bp">' + K +
-      '<h2 class="h2" style="margin-bottom:16px">Datos de la cotización</h2>' +
+    const campo = (id, etq, tipo, ph) => '<div class="field"><label for="pp-' + id + '">' + etq + '</label><div class="inp"><input id="pp-' + id + '" data-campo="' + id + '" type="' + tipo + '" placeholder="' + ph + '" value="' + esc(S[id]) + '"' +
+      (tipo === 'tel' ? ' autocomplete="tel"' : tipo === 'email' ? ' autocomplete="email"' : '') + '></div></div>';
+    let h = '<div class="card"><div class="card-top"><div><h2 class="h2">Datos de la cotización</h2><p class="sub2">Aparecen en el PDF.</p></div></div>' +
       '<div class="datos">' +
         campo('cliente', 'Nombre del prospecto', 'text', 'Nombre completo') +
-        campo('telefono', 'Teléfono', 'tel', '686 000 0000') +
+        campo('telefono', 'Teléfono', 'tel', '646 000 0000') +
         campo('correo', 'Correo electrónico', 'email', 'correo@dominio.com') +
         campo('asesor', 'Asesor', 'text', 'Nombre del asesor') +
+        '<div class="field"><label for="pp-vigencia">Vigencia de la cotización</label><div class="inp"><input id="pp-vigencia" data-campo="vigencia" type="number" inputmode="numeric" min="1" max="' + S.cfg.limites.vigenciaMax + '" step="1" value="' + dias() + '"><span class="suf">días</span></div></div>' +
+        '<div class="field"><span class="lbl">Válida hasta</span><div class="inp" style="background:var(--sand)"><input id="pp-vence" readonly tabindex="-1" value="' + esc(C.fechaLarga(venceEl())) + '"></div></div>' +
       '</div>' +
-      '<div class="field" style="margin-top:16px"><label for="pp-obs">Observaciones</label><textarea id="pp-obs" class="input" rows="4" data-campo="obs">' + esc(S.obs) + '</textarea></div>' +
-      '</div>';
+      '<div class="field" style="margin-top:16px"><label for="pp-obs">Observaciones</label><textarea id="pp-obs" class="ta" rows="4" data-campo="obs">' + esc(S.obs) + '</textarea></div></div>';
 
-    if (!c) {
-      return h + '<div class="card bp">' + K + '<p class="nota" style="margin:0;color:var(--text)">Elige un lote en el paso 01 para ver la estructura de pago.</p></div>';
-    }
+    if (!c) return h + '<div class="card"><p class="nota-calc" style="margin:0">Elige una casa en el paso 1 para ver la estructura de pago.</p></div>';
 
-    h += '<div class="card bp">' + K + '<h2 class="h2" style="margin-bottom:14px">Estructura de pago</h2>' +
+    h += '<div class="card"><div class="card-top"><h2 class="h2">Estructura de pago</h2><span class="chip">' + esc(e.nombre) + '</span></div>' +
       '<div style="overflow-x:auto"><table class="tabla"><thead><tr><th>Concepto</th><th class="r">%</th><th class="r">Pagos</th><th class="r">Importe</th></tr></thead><tbody>' +
-      tramos(c, e).map(t => '<tr><td>' + esc(t.k) + '<span class="s">' + esc(t.sub) + '</span></td><td class="r">' + esc(t.p) + '</td><td class="r">' + esc(t.pagos) + '</td><td class="r">' + esc(t.v) + '</td></tr>').join('') +
+      tramos(c, e).map(t => '<tr' + (t.cls ? ' class="' + t.cls + '"' : '') + '><td>' + esc(t.k) + '<span class="s">' + esc(t.sub) + '</span></td><td class="r">' + esc(t.p) + '</td><td class="r">' + esc(t.pagos) + '</td><td class="r">' + esc(t.v) + '</td></tr>').join('') +
       '</tbody></table></div></div>';
 
     if (S.cfg.mostrarCalendario !== false) {
       const cal = C.calendario(c, S.inicio);
-      h += '<div class="card bp">' + K + '<h2 class="h2" style="margin-bottom:14px">Calendario</h2>' +
+      h += '<div class="card"><div class="card-top"><h2 class="h2">Calendario</h2><span class="chip">' + cal.length + ' pagos</span></div>' +
         '<div class="scroll"><table class="tabla"><thead><tr><th>#</th><th>Fecha</th><th>Concepto</th><th class="r">Pago</th><th class="r">Acumulado</th></tr></thead><tbody>' +
-        cal.map((r, i) => '<tr><td class="num muted">' + String(i + 1).padStart(2, '0') + '</td><td>' + C.fecha(r.d) + '</td><td>' + esc(r.k) + '</td><td class="r">' + C.mx(r.v) + '</td><td class="r muted">' + C.mx(r.acum) + '</td></tr>').join('') +
+        cal.map((r, i) => '<tr><td class="muted">' + String(i + 1).padStart(2, '0') + '</td><td>' + C.fecha(r.d) + '</td><td>' + esc(r.k) + '</td><td class="r">' + C.mx(r.v) + '</td><td class="r muted">' + C.mx(r.acum) + '</td></tr>').join('') +
         '</tbody></table></div></div>';
     }
 
     if (S.cfg.plusvalia.mostrar !== false) {
       const pv = datosPlusvalia();
-      h += '<div class="card bp" style="display:flex;flex-direction:column;gap:16px">' + K +
-        '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap"><h2 class="h2">Valor de la propiedad</h2><span class="muted" style="font-size:12px">' + esc(pv.leyenda) + '</span></div>' +
+      h += '<div class="card"><div class="card-top"><div><h2 class="h2">Valor de la propiedad</h2><p class="sub2">' + esc(pv.leyenda) + '</p></div></div>' +
         '<div class="graf">' + pv.barras.map(b =>
-          '<div class="col"><span class="et">' + b.et + '</span><div class="area"><div class="par" style="height:' + b.h + '"><i style="background:var(--accent-300);height:' + b.hc + '"></i><i style="background:var(--accent-700);height:100%"></i></div></div><span class="a">' + b.anio + '</span></div>').join('') +
-        '</div>' +
-        '<div class="proy">' + pv.proy.map(p => '<div style="border-left-color:' + p.bar + '"><span class="k">' + esc(p.k) + '</span><span class="v">' + p.v + '</span><span class="d">' + esc(p.d) + '</span></div>').join('') + '</div>' +
-        '</div>';
+          '<div class="col"><span class="et">' + b.et + '</span><div class="area"><div class="par" style="height:' + b.h + '"><i style="background:#d9c49a;height:' + b.hc + '"></i><i style="background:var(--navy);height:100%"></i></div></div><span class="a">' + b.anio + '</span></div>').join('') +
+        '</div><div class="leyenda"><span><i class="dot" style="background:#d9c49a"></i>Conservador</span><span><i class="dot" style="background:var(--navy)"></i>Optimista</span></div>' +
+        '<div class="kpis">' + pv.proy.map(p => '<div class="kpi' + (p.base ? ' base' : '') + '"><div class="k">' + esc(p.k) + '</div><div class="v">' + p.v + '</div><div class="d">' + esc(p.d) + '</div></div>').join('') + '</div></div>';
     }
     return h;
   }
@@ -367,118 +423,120 @@
     const hoy = new Date();
     const folio = p.prefijoFolio + L.lote.replace('LT', '');
     const fechaH = C.fechaCorta(hoy);
+    const vence = C.fechaCorta(venceEl());
     const sup = cfg.superficies[L.tipo] || {};
     const m2 = v => v ? (+v).toFixed(2) + ' m²' : '—';
     const vacio = v => esc(v && v.trim() ? v.trim() : '—');
-    const legalV = [L.vendida ? texto('legalVendida') : '', e.tipo === 'flexible' ? texto('legalPersonalizado') : ''].filter(Boolean).join('. ');
-    const kv = (k, v, cls) => '<span>' + k + '</span><span' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</span>';
+    const leg = legales();
+    const kv = pares => '<div class="hj-kv">' + pares.map(([k, v]) => '<span>' + k + '</span><span>' + v + '</span>').join('') + '</div>';
+    const ubic = p.prefijoUbicacion + String(L.num).padStart(3, '0');
 
-    // Recorte del plano técnico centrado en el lote
+    // KPI de mensualidad principal
+    const mensK = c.m2 > 0 ? [c.flex ? 'Mensualidad fija' : 'Mensualidad 2º tramo', C.mx(c.mens2), c.m2 + ' meses'] : c.m1 > 0 ? ['Mensualidad enganche', C.mx(c.mens1), c.m1 + ' meses'] : ['Apartado', C.mx(c.ap), 'un pago'];
+
+    // Barra de proporciones
+    const partes = [['Enganche', c.pri, '#b8923f'], [c.flex ? 'Mensualidades' : '2º enganche', c.seg, '#2e6d8e'], [c.flex && c.saldoEntrega ? 'Contra entrega' : 'Escritura', c.esc, '#14304d']].filter(x => x[1] > 0.005);
+    const barra = '<div class="hj-barra">' + partes.map(([, v, col]) => '<i style="width:' + (v / c.F * 100).toFixed(2) + '%;background:' + col + '"></i>').join('') + '</div>' +
+      '<div class="hj-ley">' + partes.map(([t, v, col]) => '<span><i style="background:' + col + '"></i>' + t + ' ' + (v / c.F * 100).toFixed(1) + '%</span>').join('') + '</div>';
+
+    // Plan de pagos: misma información que el formato oficial
+    const filas = [];
+    const r = (k, d, v, cls) => filas.push('<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + k + '</td><td>' + (d || '') + '</td><td>' + v + '</td></tr>');
+    const grupo = t => filas.push('<tr class="grupo"><td colspan="3">' + t + '</td></tr>');
+    r('Precio de venta', 'Lista vigente', C.mxf(c.P));
+    if (c.D > 0) { r('Descuento aplicado', c.desc + '%', '−' + C.mxf(c.D)); }
+    r('Precio final', 'Base de cálculo', C.mxf(c.F), 'fuerte');
+    grupo('Enganche ' + c.p1 + '% · reserva de precio y ubicación');
+    r('Enganche ' + c.p1 + '%', '', C.mxf(c.pri));
+    r('Anticipo de apartado', '1er pago', C.mxf(c.ap));
+    r('Remanente del enganche', c.m1 > 0 ? 'Plazo complemento: ' + c.m1 + ' meses' : 'N/A', C.mxf(c.resto));
+    if (c.m1 > 0) r('Mensualidad', c.m1 + ' pagos', C.mxf(c.mens1), 'mens');
+    if (c.seg > 0) {
+      grupo(c.flex ? 'Mensualidades fijas · ' + c.p2 + '% del precio final' : 'Segundo complemento ' + c.p2 + '% · total al ' + c.pt + '% de enganche');
+      r(c.flex ? 'Total mensualidades' : 'Segundo complemento', 'Plazo: ' + c.m2 + ' meses', C.mxf(c.seg));
+      r('Mensualidad', c.m2 + ' pagos', C.mxf(c.mens2), 'mens');
+    }
+    r(c.flex && c.saldoEntrega ? 'Saldo contra entrega' : 'Saldo a financiar a escritura', c.flex && c.saldoEntrega ? C.mesAnio(c.entrega) + ' · ' + c.pe + '%' : c.pe + '%', C.mxf(c.esc), 'final');
+
+    const reqs = '<div class="hj-req">' + cfg.requisitos.entrega.map(t => '<div><i></i>' + esc(t) + '</div>').join('') +
+      '<div class="sub">Se firman después</div>' + cfg.requisitos.firma.map(t => '<div class="firma"><i></i>' + esc(t) + '</div>').join('') + '</div>';
+
     const tw = 150, th = 92;
     const pt = S.pinesPlano.pts.find(q => q[0] === L.num);
     let tx = 0, ty = 0;
     if (pt) { tx = Math.max(0, Math.min(W - tw, pt[1] - tw / 2)); ty = Math.max(0, Math.min(H - th, pt[2] - th / 2)); }
     const pinL = pt ? pct(pt[1] - tx, tw) : '50%', pinT = pt ? pct(pt[2] - ty, th) : '50%';
 
-    const oculto = c.seg <= 0 ? ' oculto' : '';
-    const reqs = cfg.requisitos.entrega.map(t => '<div><i></i><span>' + esc(t) + '</span></div>').join('') +
-      cfg.requisitos.firma.map(t => '<div class="firma"><i></i><span>' + esc(t) + '</span></div>').join('');
-
     const h1 = '<div class="hoja" data-hoja="1"><div>' +
-      '<div class="h-cab"><div><div class="h-marca">' + esc(p.nombre) + '</div><div class="h-lema">' + esc(p.lema) + '</div></div>' +
-        '<div class="h-cot"><div class="t">Cotización</div><div class="h-folio"><span>Folio:</span><span>' + esc(folio) + '</span><span>Fecha:</span><span>' + fechaH + '</span><span>Vigencia:</span><span>' + cfg.vigenciaDias + ' días naturales</span></div></div></div>' +
-      '<img class="h-foto" src="' + IMG.portada + '" alt="">' +
-      '<div class="h-2col">' +
-        '<div class="h-col"><div class="h-banda">Datos del prospecto</div><div class="h-kv">' +
-          kv('Nombre del prospecto:', vacio(S.cliente), 'big') + kv('Teléfono:', vacio(S.telefono)) + kv('Correo electrónico:', vacio(S.correo)) + kv('Asesor:', vacio(S.asesor)) +
-        '</div></div>' +
-        '<div class="h-col"><div class="h-banda">Información de la propiedad</div><div class="h-kv">' +
-          kv('Lote / ubicación:', esc(p.prefijoUbicacion + String(L.num).padStart(3, '0')), 'xl') + kv('Prototipo:', L.tipo, 'big') +
-          kv('Superficie de terreno:', L.m2.toFixed(2) + ' m²') + kv('Superficie de construcción:', m2(sup.construccion)) +
-          kv('Roof garden:', m2(sup.roof)) + kv('Superficie disfrutable:', m2(sup.disfrutable)) + kv('Clúster:', esc(p.cluster)) +
-        '</div></div>' +
-      '</div>' +
-      '<div class="h-2col">' +
-        '<div><div class="h-banda c">Propuesta económica</div><div class="h-prop">' +
-          '<span class="l">Precio de venta:</span><span class="v crema">' + C.mxf(c.P) + '</span>' +
-          '<span class="l">' + (c.D > 0 ? 'Descuento aplicado:' : '') + '</span><span class="v' + (c.D > 0 ? ' crema' : '') + '" style="font-size:11px">' + (c.D > 0 ? c.desc + '%' : '') + '</span>' +
-          '<span class="l">' + (c.D > 0 ? 'Importe del descuento:' : '') + '</span><span class="v">' + (c.D > 0 ? C.mxf(c.D) : '') + '</span>' +
-          '<span class="etq navy">Precio final:</span><span class="v">' + C.mxf(c.F) + '</span>' +
-          '<span class="l pt">Enganche ' + c.p1 + '% (Reserva Precio/Ubicación):</span><span class="v pt">' + C.mxf(c.pri) + '</span>' +
-          '<span class="l">Anticipo Apartado 1er Pago:</span><span class="v">' + C.mxf(c.ap) + '</span>' +
-          '<span class="l">Remanente al 1er ' + c.p1 + '%:</span><span class="v">' + C.mxf(c.resto) + '</span>' +
-          '<span class="plazo">Plazo Complemento 1er Enganche:</span><span class="v meses">' + (c.m1 > 0 ? c.m1 + ' meses' : 'N/A') + '</span>' +
-          '<span class="etq oro">Mensualidad:</span><span class="v">' + (c.m1 > 0 ? C.mxf(c.mens1) : '—') + '</span>' +
-          (c.flex
-            ? '<span class="l pt' + oculto + '">Mensualidades fijas (' + c.p2 + '% del precio final):</span><span class="v pt' + oculto + '">' + C.mxf(c.seg) + '</span>' +
-              '<span class="plazo' + oculto + '">Plazo Mensualidades:</span><span class="v meses' + oculto + '">' + c.m2 + ' meses</span>'
-            : '<span class="l pt' + oculto + '">Segundo Complemento ' + c.p2 + '% para cubrir total al ' + c.pt + '% Enganche:</span><span class="v pt' + oculto + '">' + C.mxf(c.seg) + '</span>' +
-              '<span class="plazo' + oculto + '">Plazo Complemento 2do Enganche:</span><span class="v meses' + oculto + '">' + c.m2 + ' meses</span>') +
-          '<span class="etq oro' + oculto + '">Mensualidad:</span><span class="v' + oculto + '">' + C.mxf(c.mens2) + '</span>' +
-          (c.flex && c.saldoEntrega
-            ? '<span class="l pt">Saldo contra entrega (' + C.mesAnio(c.entrega) + '):</span><span class="v pt">' + C.mxf(c.esc) + '</span>'
-            : '<span class="l pt">Saldo a financiar al momento Escritura:</span><span class="v pt">' + C.mxf(c.esc) + '</span>') +
-        '</div></div>' +
-        '<div class="h-col"><div class="h-banda c">Requisitos · Persona física</div><div class="h-req">' + reqs + '</div></div>' +
-      '</div>' +
-      '<div><div class="h-banda">Observaciones</div><p class="h-obs">' + esc(S.obs) + '</p></div>' +
-      '</div><div>' +
-      '<div class="h-firmas">' +
-        '<div class="h-firma"><div class="n">' + esc(cfg.gerenteComercial) + '</div><div class="r">Gerente Comercial</div></div>' +
-        '<div class="h-topo"><div class="marco" style="aspect-ratio:' + (tw / th).toFixed(4) + '">' +
+      '<div class="hj-hero"><img src="' + IMG.portada + '" alt=""><div class="vel"></div>' +
+        '<div class="izq"><div class="marca-g">' + esc(p.nombre) + '</div><div class="lema">' + esc(p.lema) + '</div></div>' +
+        '<div class="der"><div class="t">Cotización</div><dl><dt>Folio</dt><dd>' + esc(folio) + '</dd><dt>Fecha</dt><dd>' + fechaH + '</dd><dt>Válida hasta</dt><dd>' + vence + '</dd></dl></div></div>' +
+      '<div class="hj-pad">' +
+        '<div class="hj-kpis">' +
+          '<div class="hj-kpi"><div class="k">Casa</div><div class="v">' + esc(ubic) + '</div><div class="s">' + tipoTxt(L.tipo) + '</div></div>' +
+          '<div class="hj-kpi"><div class="k">Entrega estimada</div><div class="v">' + esc(C.mesAnio(L.entrega)) + '</div><div class="s">' + esc(p.cluster) + '</div></div>' +
+          '<div class="hj-kpi dest"><div class="k">Precio final</div><div class="v">' + C.mxf(c.F) + '</div><div class="s">' + (c.D > 0 ? 'Incluye ' + c.desc + '% de descuento' : esc(e.nombre)) + '</div></div>' +
+          '<div class="hj-kpi"><div class="k">' + mensK[0] + '</div><div class="v">' + mensK[1] + '</div><div class="s">' + mensK[2] + '</div></div>' +
+        '</div>' +
+        '<div class="hj-2 hj-sec">' +
+          '<div><div class="hj-tit">Prospecto</div>' + kv([['Nombre', '<b>' + vacio(S.cliente) + '</b>'], ['Teléfono', vacio(S.telefono)], ['Correo', vacio(S.correo)], ['Asesor', vacio(S.asesor)]]) + '</div>' +
+          '<div><div class="hj-tit">Propiedad</div>' + kv([['Lote / ubicación', '<b>' + esc(ubic) + '</b> · ' + L.tipo], ['Terreno', L.m2.toFixed(2) + ' m²'], ['Construcción', m2(sup.construccion)], ['Roof garden', m2(sup.roof)], ['Superficie disfrutable', m2(sup.disfrutable)]]) + '</div>' +
+        '</div>' +
+        '<div class="hj-2 hj-sec" style="grid-template-columns:1.45fr 1fr">' +
+          '<div><div class="hj-tit">Propuesta económica · ' + esc(e.nombre) + '</div>' + barra + '<table class="hj-plan"><tbody>' + filas.join('') + '</tbody></table></div>' +
+          '<div><div class="hj-tit">Requisitos · persona física</div>' + reqs + '</div>' +
+        '</div>' +
+        '<div class="hj-sec"><div class="hj-tit">Observaciones</div><p class="hj-obs">' + esc(S.obs) + '</p></div>' +
+      '</div></div><div>' +
+      '<div class="hj-pad"><div class="hj-firmas">' +
+        '<div class="hj-firma"><div class="n">' + esc(cfg.gerenteComercial) + '</div><div class="r">Gerente Comercial</div></div>' +
+        '<div class="hj-topo"><div class="marco" style="aspect-ratio:' + (tw / th).toFixed(4) + '">' +
           '<img src="' + IMG.color + '" alt="" style="left:' + pct(-tx, tw) + ';top:' + pct(-ty, th) + ';width:' + pct(W, tw) + '">' +
           '<span class="aro" style="left:' + pinL + ';top:' + pinT + '"></span><span class="nro" style="left:' + pinL + ';top:' + pinT + '">' + L.num + '</span></div>' +
-          '<div class="pie-l"><strong>Lote ' + L.num + '</strong> · ' + (L.tipo === '2R' ? '2 recámaras' : '3 recámaras') + ' · ' + L.m2.toFixed(2) + ' m²</div></div>' +
-        '<div class="h-firma"><div class="n">' + esc(S.cliente.trim()) + '</div><div class="r">Prospecto</div></div>' +
-      '</div>' +
-      '<div class="h-pie"><div class="lema">' + esc(p.nombre + ' · ' + p.lema) + '</div>' +
-        (legalV ? '<div class="vend">' + esc(legalV) + '</div>' : '') +
-        '<div class="leg">' + esc(texto('legalHoja1')) + '</div></div>' +
+          '<div class="pie-l">Lote ' + L.num + ' · ' + tipoTxt(L.tipo) + ' · ' + L.m2.toFixed(2) + ' m²</div></div>' +
+        '<div class="hj-firma"><div class="n">' + esc(S.cliente.trim()) + '</div><div class="r">Prospecto</div></div>' +
+      '</div></div>' +
+      '<div class="hj-pie"><div class="lema">' + esc(p.nombre + ' · ' + p.lema) + '</div><div class="leg">' +
+        (leg.length ? '<span class="vend">' + esc(leg.join('. ')) + '.</span><br>' : '') + esc(texto('legalHoja1')) + ' Vigencia ' + dias() + ' días naturales.</div></div>' +
       '</div></div>';
 
-    // Hoja 2: calendario y plusvalía
-    const cal = C.calendario(c, S.inicio);
+    const cal = C.calendario(c, S.inicio).map((x, i) => Object.assign({ i }, x));
     const mitad = Math.ceil(cal.length / 2);
-    const col = filas => '<div class="g"><span class="th">#</span><span class="th">Fecha</span><span class="th">Concepto</span><span class="th r">Pago</span>' +
-      filas.map(r => {
-        const b = r.i === 0 || r.i === cal.length - 1 ? ' b' : '';
-        return '<span class="i" data-fila>' + String(r.i + 1).padStart(2, '0') + '</span><span data-fila>' + C.fecha(r.d) + '</span><span class="' + b + '" data-fila>' + esc(r.k) + '</span><span class="r' + b + '" data-fila>' + C.mx(r.v) + '</span>';
+    const col = list => '<div class="g"><span class="th">#</span><span class="th">Fecha</span><span class="th">Concepto</span><span class="th r">Pago</span>' +
+      list.map(x => {
+        const b = x.i === 0 || x.i === cal.length - 1 ? ' b' : '';
+        return '<span class="i" data-fila>' + String(x.i + 1).padStart(2, '0') + '</span><span data-fila>' + C.fecha(x.d) + '</span><span class="' + b + '" data-fila>' + esc(x.k) + '</span><span class="r' + b + '" data-fila>' + C.mx(x.v) + '</span>';
       }).join('') + '</div>';
-    const conI = cal.map((r, i) => Object.assign({ i }, r));
     const tot = [
       ['Apartado', C.mxf(c.ap)],
-      [c.m1 + ' mens. primer tramo', C.mxf(c.mens1)],
-      c.flex
-        ? (c.m2 > 0 ? [c.m2 + ' mensualidades fijas', C.mxf(c.mens2)] : ['Mensualidades fijas', 'No aplica'])
+      [c.m1 + ' mens. enganche', c.m1 ? C.mxf(c.mens1) : 'No aplica'],
+      c.flex ? (c.m2 > 0 ? [c.m2 + ' mensualidades fijas', C.mxf(c.mens2)] : ['Mensualidades fijas', 'No aplica'])
         : (c.m2 > 0 ? [c.m2 + ' mens. segundo tramo', C.mxf(c.mens2)] : ['Segundo complemento', 'No aplica']),
       [c.flex && c.saldoEntrega ? 'Contra entrega' : 'A escrituración', C.mxf(c.esc)]
     ];
     let plus = '';
     if (cfg.plusvalia.mostrar !== false) {
       const pv = datosPlusvalia();
-      plus = '<div class="h-banda" style="margin-top:14px">Valor de la propiedad</div>' +
-        '<div class="h-tasas">' + esc(pv.leyenda) + '</div>' +
-        '<div class="h-graf" data-crece>' + pv.barras.map(b =>
-          '<div class="col"><span class="et">' + b.et + '</span><div class="area"><div class="par" style="height:' + b.h + '"><i style="background:#d9c49a;height:' + b.hc + '"></i><i style="background:#16304f;height:100%"></i></div></div><span class="a">' + b.anio + '</span></div>').join('') + '</div>' +
-        '<div class="h-ley"><span><i style="background:#d9c49a"></i>Conservador</span><span><i style="background:#16304f"></i>Optimista</span></div>' +
-        '<div class="h-tot" style="margin-top:8px">' + pv.proy.map(q => '<div><div class="k">' + esc(q.k) + '</div><div class="v">' + q.v + '</div><div class="d">' + esc(q.d) + '</div></div>').join('') + '</div>';
+      plus = '<div class="hj-sec"><div class="hj-tit">Valor de la propiedad</div>' +
+        '<div style="margin:-4px 0 8px;font-size:9px;color:var(--muted)">' + esc(pv.leyenda) + '</div>' +
+        '<div class="hj-graf" data-crece>' + pv.barras.map(b =>
+          '<div class="col"><span class="et">' + b.et + '</span><div class="area"><div class="par" style="height:' + b.h + '"><i style="background:#d9c49a;height:' + b.hc + '"></i><i style="background:#14304d;height:100%"></i></div></div><span class="a">' + b.anio + '</span></div>').join('') + '</div>' +
+        '<div class="hj-ley" style="margin-top:6px"><span><i style="background:#d9c49a"></i>Conservador</span><span><i style="background:#14304d"></i>Optimista</span></div>' +
+        '<div class="hj-tot">' + pv.proy.map(q => '<div><div class="k">' + esc(q.k) + '</div><div class="v">' + q.v + '</div><div class="d"' + (q.base ? ' style="color:var(--muted)"' : '') + '>' + esc(q.d) + '</div></div>').join('') + '</div></div>';
     }
     const h2 = '<div class="hoja" data-hoja="2">' +
-      '<div class="h-cab2"><div><div class="h-marca">' + esc(p.nombre) + '</div><div class="h-lema">' + esc(p.lema) + '</div></div>' +
-        '<div class="der"><div>Folio <strong style="color:var(--navy)">' + esc(folio) + '</strong> · ' + fechaH + '</div><div>' + vacio(S.cliente) + ' · Lote ' + L.num + '</div></div></div>' +
-      '<div class="h-banda" style="margin-top:12px">Calendario de pagos</div>' +
-      '<div class="h-cal">' + col(conI.slice(0, mitad)) + col(conI.slice(mitad)) + '</div>' +
-      '<div class="h-tot">' + tot.map(t => '<div><div class="k">' + esc(t[0]) + '</div><div class="v">' + t[1] + '</div></div>').join('') + '</div>' +
-      plus +
-      '<div class="h-pie2">' + (legalV ? '<div class="vend">' + esc(legalV) + '</div>' : '') + '<div class="leg">' + esc(texto('legalHoja2')) + '</div></div>' +
+      '<div class="hj-cab2"><div><div class="marca-g">' + esc(p.nombre) + '</div><div class="lema">' + esc(p.lema) + '</div></div>' +
+        '<div class="der"><div>Folio <b>' + esc(folio) + '</b> · ' + fechaH + ' · válida hasta ' + vence + '</div><div>' + vacio(S.cliente) + ' · ' + esc(ubic) + ' · ' + esc(e.nombre) + '</div></div></div>' +
+      '<div class="hj-pad"><div class="hj-sec"><div class="hj-tit">Calendario de pagos</div>' +
+        '<div class="hj-cal">' + col(cal.slice(0, mitad)) + col(cal.slice(mitad)) + '</div>' +
+        '<div class="hj-tot">' + tot.map((t, i) => '<div' + (i === 3 ? ' class="dest"' : '') + '><div class="k">' + esc(t[0]) + '</div><div class="v">' + t[1] + '</div></div>').join('') + '</div></div>' +
+        plus + '</div>' +
+      '<div class="hj-pie2">' + (leg.length ? '<div class="vend">' + esc(leg.join('. ')) + '.</div>' : '') + esc(texto('legalHoja2')) + '</div>' +
       '</div>';
     return h1 + h2;
   }
 
-  /**
-   * Cada hoja se diseña a 816 px y se ajusta a la caja imprimible de carta (≈1066 px de alto):
-   * el sobrante vertical se reparte entre renglones del calendario y la gráfica.
-   */
+  /** Ajusta cada hoja (816 px) a la caja imprimible de carta (~1066 px): reparte el sobrante entre renglones y gráfica. */
   function ajustarHojas(conZoom) {
     const Z = 0.924, T = 1066;
     const raiz = document.documentElement;
@@ -500,7 +558,7 @@
         filas.forEach(s => { s.style.paddingTop = (3 + porFila / 2) + 'px'; s.style.paddingBottom = (3 + porFila / 2) + 'px'; });
         extra -= porFila * renglones;
       }
-      if (graf) graf.style.height = Math.round(Math.min(200, 120 + Math.max(0, extra - 4))) + 'px';
+      if (graf) graf.style.height = Math.round(Math.min(260, 130 + Math.max(0, extra - 4))) + 'px';
       let sobra = h.getBoundingClientRect().height - T;
       if (sobra > 0 && graf) { graf.style.height = Math.max(110, parseFloat(graf.style.height) - sobra - 2) + 'px'; sobra = h.getBoundingClientRect().height - T; }
       if (sobra > 0 && filas.length) { filas.forEach(s => { s.style.paddingTop = ''; s.style.paddingBottom = ''; }); sobra = h.getBoundingClientRect().height - T; }
@@ -527,8 +585,7 @@
     const yo = ++pdfToken;
     const vigente = () => yo === pdfToken;
     if (pdfUrl) { URL.revokeObjectURL(pdfUrl); pdfUrl = null; }
-    pdfFile = null;
-    pdfImgs = [];
+    pdfFile = null; pdfImgs = [];
     S.pdf = { estado: 'generando' };
     renderDialogo();
     const raiz = document.documentElement;
@@ -560,8 +617,7 @@
       const blob = pdf.output('blob');
       pdfUrl = URL.createObjectURL(blob);
       try { pdfFile = new File([blob], nombre, { type: 'application/pdf' }); } catch (e) { pdfFile = null; }
-      const compartir = !!(pdfFile && navigator.canShare && navigator.canShare({ files: [pdfFile] }));
-      S.pdf = { estado: 'listo', url: pdfUrl, nombre, compartir };
+      S.pdf = { estado: 'listo', url: pdfUrl, nombre, compartir: !!(pdfFile && navigator.canShare && navigator.canShare({ files: [pdfFile] })) };
     } catch (err) {
       console.warn('No se pudo generar el PDF', err);
       if (vigente()) S.pdf = { estado: 'error' };
@@ -571,8 +627,7 @@
     }
   }
 
-  // Imprime las mismas imágenes que lleva el PDF: así no dependen de que el navegador
-  // imprima colores de fondo (por defecto no lo hace y las bandas salían en blanco).
+  // "Imprimir" usa las mismas imágenes del PDF (no depende de que el navegador imprima fondos).
   function imprimir() {
     if (pdfImgs.length) {
       $('hojas').innerHTML = pdfImgs.map((src, i) => '<img class="hoja-img" src="' + src + '" alt="Hoja ' + (i + 1) + '">').join('');
@@ -583,95 +638,26 @@
     esperarImagenes($('hojas')).then(() => { ajustarHojas(true); window.print(); });
   }
 
-  // ---------- Diálogos ----------
   function renderDialogo() {
     const d = $('dialogo');
-    if (S.login) {
-      const lg = S.login;
-      d.innerHTML = '<div class="fondo" data-acc="cerrar-fondo"><form class="dialogo bp" id="form-login" role="dialog" aria-modal="true" aria-labelledby="t-login">' + K +
-        '<h2 id="t-login">Acceso gerente</h2><p>Permite cotizar unidades vendidas.</p>' +
-        '<div class="field"><label for="pp-lg-email">Correo</label><input id="pp-lg-email" class="input" type="email" autocomplete="username" required value="' + esc(lg.email) + '"></div>' +
-        '<div class="field"><label for="pp-lg-pass">Contraseña</label><input id="pp-lg-pass" class="input" type="password" autocomplete="current-password" required></div>' +
-        (lg.error ? '<p class="err" role="alert">' + esc(lg.error) + '</p>' : '') +
-        '<div class="botones"><button type="button" class="btn btn-ghost" data-acc="cerrar">Cancelar</button><button type="submit" class="btn btn-primary"' + (lg.enviando ? ' disabled' : '') + '>' + (lg.enviando ? 'Entrando…' : 'Entrar') + '</button></div>' +
-        '</form></div>';
-      const campo = $(lg.email ? 'pp-lg-pass' : 'pp-lg-email');
-      if (campo) campo.focus();
-      return;
-    }
-    if (S.pdf) {
-      const p = S.pdf;
-      const titulo = p.estado === 'listo' ? 'Cotización lista' : p.estado === 'error' ? 'No se pudo generar el PDF' : 'Generando cotización…';
-      const txt = p.estado === 'listo' ? p.nombre : p.estado === 'error' ? 'Intenta de nuevo. Si el problema sigue, abre el cotizador en Safari o Chrome.' : 'Preparando el PDF. Puede tardar unos segundos.';
-      const tactil = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-      d.innerHTML = '<div class="fondo" data-acc="cerrar-fondo"><div class="dialogo bp" role="dialog" aria-modal="true" aria-labelledby="t-pdf">' + K +
-        '<h2 id="t-pdf">' + titulo + '</h2><p>' + esc(txt) + '</p>' +
-        '<div class="botones"><button type="button" class="btn btn-ghost" data-acc="cerrar">Cerrar</button>' +
-        (p.estado !== 'generando' && !tactil ? '<button type="button" class="btn" data-acc="imprimir">Imprimir</button>' : '') +
-        (p.estado === 'error' ? '<button type="button" class="btn btn-primary" data-acc="generar">Reintentar</button>' : '') +
-        (p.compartir ? '<button type="button" class="btn" data-acc="compartir">Compartir</button>' : '') +
-        (p.estado === 'listo' ? '<a class="btn btn-primary" href="' + p.url + '" download="' + esc(p.nombre) + '">Descargar PDF</a>' : '') +
-        '</div></div></div>';
-      return;
-    }
-    d.innerHTML = '';
-  }
-
-  // ---------- Gerente (validado en el servidor) ----------
-  async function llamarGerente(payload) {
-    const r = await fetch('/api/cotizador-gerente', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin'
-    });
-    let j = {};
-    try { j = await r.json(); } catch (e) { /* respuesta vacía */ }
-    return { ok: r.ok, status: r.status, j };
-  }
-
-  async function entrar(email, password) {
-    S.login = { email, enviando: true };
-    renderDialogo();
-    let msg = '';
-    try {
-      const r = await llamarGerente({ email, password });
-      if (r.ok && r.j.token) {
-        try { sessionStorage.setItem(TOKEN_KEY, r.j.token); } catch (e) { /* modo privado */ }
-        S.gerente = { token: r.j.token, exp: r.j.exp };
-        S.vendidas = r.j.vendidas || {};
-        S.login = null;
-        render();
-        return;
-      }
-      msg = r.status === 401 ? 'Correo o contraseña incorrectos.'
-        : r.status === 429 ? 'Demasiados intentos. Espera 15 minutos.'
-        : r.status === 503 ? 'El acceso de gerente aún no está configurado en el servidor.'
-        : 'No se pudo validar el acceso (' + r.status + ').';
-    } catch (e) {
-      msg = 'Sin conexión con el servidor.';
-    }
-    S.login = { email, error: msg };
-    renderDialogo();
-  }
-
-  async function restaurarGerente() {
-    let token = null;
-    try { token = sessionStorage.getItem(TOKEN_KEY); } catch (e) { return; }
-    if (!token) return;
-    try {
-      const r = await llamarGerente({ token });
-      if (r.ok) { S.gerente = { token, exp: r.j.exp }; S.vendidas = r.j.vendidas || {}; render(); }
-      else sessionStorage.removeItem(TOKEN_KEY);
-    } catch (e) { /* sin red: sigue como asesor */ }
-  }
-
-  function salirGerente() {
-    try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* nada */ }
-    S.gerente = null; S.vendidas = {};
-    if (S.lote && S.lote.vendida) { S.lote = null; S.paso = 1; }
-    render();
+    if (!S.pdf) { d.innerHTML = ''; return; }
+    const p = S.pdf;
+    const titulo = p.estado === 'listo' ? 'Cotización lista' : p.estado === 'error' ? 'No se pudo generar' : 'Generando cotización';
+    const txt = p.estado === 'listo' ? p.nombre : p.estado === 'error' ? 'Intenta de nuevo. Si sigue fallando, abre el cotizador en Safari o Chrome.' : 'Preparando el PDF, tarda unos segundos…';
+    const tactil = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    d.innerHTML = '<div class="fondo" data-acc="cerrar-fondo"><div class="dialogo" role="dialog" aria-modal="true" aria-labelledby="t-pdf">' +
+      '<h2 id="t-pdf">' + titulo + '</h2>' + (p.estado === 'generando' ? '<div class="spinner" aria-hidden="true"></div>' : '') + '<p>' + esc(txt) + '</p>' +
+      '<div class="botones"><button type="button" class="btn btn-ghost" data-acc="cerrar">Cerrar</button>' +
+      (p.estado !== 'generando' && !tactil ? '<button type="button" class="btn" data-acc="imprimir">Imprimir</button>' : '') +
+      (p.estado === 'error' ? '<button type="button" class="btn btn-primary" data-acc="generar">Reintentar</button>' : '') +
+      (p.compartir ? '<button type="button" class="btn" data-acc="compartir">Compartir</button>' : '') +
+      (p.estado === 'listo' ? '<a class="btn btn-primary" href="' + p.url + '" download="' + esc(p.nombre) + '">Descargar PDF</a>' : '') +
+      '</div></div></div>';
   }
 
   // ---------- Render y eventos ----------
   function render() {
+    if (!S.sesion) return;
     renderTop();
     renderPasos();
     $('vista').innerHTML = S.paso === 1 ? vistaLote() : S.paso === 2 ? vistaEsquema() : vistaCotizacion();
@@ -685,48 +671,51 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function nueva() {
+    S.lote = null; S.aj = AJ0(); S.descOn = false; S.cliente = ''; S.telefono = ''; S.correo = ''; S.vigencia = null;
+    S.obs = S.cfg.observaciones || ''; S.inicio = C.hoyISO();
+    irPaso(1);
+  }
+
+  function cerrarDialogo() {
+    if (S.pdf) { pdfToken++; pdfImgs = []; }
+    S.pdf = null;
+    renderDialogo();
+  }
+
   document.addEventListener('click', ev => {
     const el = ev.target.closest('[data-acc]');
     if (!el || !S.cfg) return;
     const acc = el.dataset.acc, v = el.dataset.v;
     switch (acc) {
       case 'paso': irPaso(+v); break;
-      case 'siguiente': irPaso(S.paso === 3 ? 1 : S.paso + 1); break;
+      case 'siguiente': if (S.paso === 3) nueva(); else irPaso(S.paso + 1); break;
       case 'modo': S.modo = v; render(); break;
       case 'filtro': S.filtro = v; render(); break;
-      case 'pin': elegirLote(S.lotes.find(l => l.num === +v), false); break;
-      case 'lote': elegirLote(S.lotes.find(l => l.num === +v), true); break;
+      case 'pin': { const l = S.lotes.find(x => x.num === +v); if (puedeElegir(l)) { S.lote = l; render(); } break; }
+      case 'lote': { const l = S.lotes.find(x => x.num === +v); if (puedeElegir(l)) { S.lote = l; irPaso(2); } break; }
       case 'esquema': S.esquema = v; S.aj = AJ0(); render(); break;
       case 'desc': S.descOn = !S.descOn; S.aj.desc = null; render(); break;
       case 'eng': S.aj.engOn = !S.aj.engOn; S.aj.eng = null; render(); break;
       case 'saldo': S.aj.saldo = v; render(); break;
       case 'generar': generarPdf(); break;
       case 'imprimir': imprimir(); break;
-      case 'compartir':
-        if (pdfFile && navigator.share) navigator.share({ files: [pdfFile], title: pdfFile.name }).catch(() => {});
-        break;
-      case 'login': S.login = { email: '' }; renderDialogo(); break;
-      case 'salir': salirGerente(); break;
+      case 'compartir': if (pdfFile && navigator.share) navigator.share({ files: [pdfFile], title: pdfFile.name }).catch(() => {}); break;
+      case 'salir': cerrarSesion(); break;
       case 'cerrar': cerrarDialogo(); break;
       case 'cerrar-fondo': if (ev.target === el) cerrarDialogo(); break;
     }
   });
 
-  function cerrarDialogo() {
-    if (S.pdf) { pdfToken++; pdfImgs = []; }
-    S.login = null; S.pdf = null;
-    renderDialogo();
-  }
-
-  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && (S.login || S.pdf)) cerrarDialogo(); });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && S.pdf) cerrarDialogo(); });
 
   document.addEventListener('submit', ev => {
-    if (ev.target.id !== 'form-login') return;
+    if (ev.target.id !== 'form-acceso') return;
     ev.preventDefault();
-    entrar($('pp-lg-email').value.trim(), $('pp-lg-pass').value);
+    entrar($('ac-email').value.trim(), $('ac-pass').value);
   });
 
-  // Campos: el cálculo se actualiza al escribir sin volver a pintar el formulario.
+  // Al escribir se recalcula sin volver a pintar el formulario (no se pierde el foco).
   const num = t => { const n = parseFloat(t); return isNaN(n) ? null : n; };
   document.addEventListener('input', ev => {
     const id = ev.target.dataset && ev.target.dataset.campo;
@@ -744,16 +733,23 @@
       case 'pct1': S.aj.pct1 = n == null ? 0 : Math.max(0, Math.min(100, n)); break;
       case 'mens': S.aj.mens = Math.max(0, n || 0); break;
       case 'inicio': if (/^\d{4}-\d{2}-\d{2}$/.test(t)) S.inicio = t; break;
-      default: S[id] = t; return; // datos del prospecto: no cambian importes
+      case 'vigencia':
+        if (n != null && n >= 1) {
+          S.vigencia = Math.min(lim.vigenciaMax || 90, Math.round(n));
+          const v = $('pp-vence'); if (v) v.value = C.fechaLarga(venceEl());
+          renderTop();
+        }
+        renderAside();
+        return;
+      default: S[id] = t; return; // datos del prospecto
     }
     renderAside();
-    const nota = $('nota-eng');
-    if (nota) nota.textContent = notaEng();
+    const nota = $('nota-calc');
+    if (nota) nota.innerHTML = notaCalc();
   });
-  // Al salir del campo se normaliza (p. ej. plazo 0 → 1) y se ocultan/muestran campos dependientes.
   document.addEventListener('change', ev => {
     const id = ev.target.dataset && ev.target.dataset.campo;
-    if (id && ['desc', 'ap', 'eng', 'm1', 'm2', 'inicio', 'pct1', 'mens'].includes(id)) render();
+    if (id && ['desc', 'ap', 'eng', 'm1', 'm2', 'inicio', 'pct1', 'mens', 'vigencia'].includes(id)) render();
   });
 
   window.addEventListener('beforeprint', () => {
@@ -762,20 +758,12 @@
 
   // ---------- Arranque ----------
   const leer = f => fetch(DATA + f, { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.json(); });
-  Promise.all([leer('config.json'), leer('inventario.json'), leer('pines-plano.json'), leer('pines-render.json')])
-    .then(([cfg, inv, pp, pr]) => {
-      S.cfg = cfg;
-      S.lotes = inv.lotes;
-      S.pinesPlano = pp;
-      S.pinesRender = pr;
+  Promise.all([leer('config.json'), leer('pines-plano.json'), leer('pines-render.json')])
+    .then(([cfg, pp, pr]) => {
+      S.cfg = cfg; S.pinesPlano = pp; S.pinesRender = pr;
       S.esquema = cfg.esquemas.lista[0].id;
       S.obs = cfg.observaciones || '';
-      if (inv.lista) cfg.proyecto.lista = inv.lista;
-      render();
-      restaurarGerente();
+      restaurar();
     })
-    .catch(err => {
-      console.error(err);
-      $('vista').innerHTML = '<p>No se pudo cargar el inventario. Recarga la página.</p>';
-    });
+    .catch(err => { console.error(err); mostrarAcceso('No se pudo cargar el cotizador. Recarga la página.'); });
 })();

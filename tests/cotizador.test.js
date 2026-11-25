@@ -8,7 +8,7 @@ const assert = require('assert');
 const path = require('path');
 const C = require(path.join(__dirname, '..', 'cotizador', 'calc.js'));
 const cfg = require(path.join(__dirname, '..', 'cotizador', 'data', 'config.json'));
-const inv = require(path.join(__dirname, '..', 'cotizador', 'data', 'inventario.json'));
+const inv = require(path.join(__dirname, '..', 'api', '_data', 'inventario.json'));
 
 const E = id => cfg.esquemas.lista.find(e => e.id === id);
 const lote = n => inv.lotes.find(l => l.num === n);
