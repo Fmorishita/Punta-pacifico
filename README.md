@@ -31,8 +31,8 @@ Landing page de una sola página para **Punta Pacífico · Oceanview Living Ense
 
 La función `api/zoom-meeting.js` valida los datos (día dentro de los próximos 14, horario permitido), limita solicitudes por IP, solo acepta llamadas desde el sitio y nunca devuelve el enlace de anfitrión.
 
-## Cotizador (/cotizador)
-Réplica del "Cotizador Punta Pacífico · Clúster 1" en `https://puntapacifico.vercel.app/cotizador` (no se indexa en Google).
+## Cotizador (/cotizador/pp)
+Réplica del "Cotizador Punta Pacífico · Clúster 1" en `https://puntapacifico.vercel.app/cotizador/pp` (no se indexa en Google).
 3 pasos: **01 Lote** (plano Color/B/N/Render con pines, filtros 2/3 rec) → **02 Esquema** (5 esquemas + ajustes) → **03 Cotización** (estructura de pago, calendario, plusvalía y PDF de 2 hojas generado en el navegador).
 
 - **Esquemas de pago, textos, tasas de plusvalía, superficies y requisitos**: `cotizador/data/config.json`. Se edita el JSON y se publica; no hay que tocar código.
