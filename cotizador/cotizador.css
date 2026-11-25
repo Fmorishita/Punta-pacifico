@@ -169,7 +169,7 @@ aside { position: sticky; top: 86px; display: flex; flex-direction: column; gap:
 /* html2canvas mide la línea base del texto con una imagen 1×1; con img{display:block} el texto sale corrido. */
 .capturando img[src^="data:image/gif"] { display: inline !important; max-width: none !important; }
 .capturando .hojas, .midiendo .hojas { display: block; position: absolute; left: 0; top: 0; z-index: -1; width: 816px; }
-.hoja { width: 816px; background: #fff; color: var(--navy); font-family: 'Barlow', sans-serif; font-size: 11px; line-height: 1.45; overflow: hidden; }
+.hoja { -webkit-print-color-adjust: exact; print-color-adjust: exact; width: 816px; background: #fff; color: var(--navy); font-family: 'Barlow', sans-serif; font-size: 11px; line-height: 1.45; overflow: hidden; }
 .hoja + .hoja { margin-top: 24px; }
 .hoja[data-hoja="1"] { display: flex; flex-direction: column; justify-content: space-between; }
 .hoja[data-hoja="2"] { font-size: 10px; line-height: 1.4; }
@@ -277,4 +277,8 @@ aside { position: sticky; top: 86px; display: flex; flex-direction: column; gap:
   .hoja { margin: 0 auto !important; break-inside: avoid; }
   .hoja[data-hoja="1"] { break-after: page; page-break-after: always; }
   .hoja + .hoja { margin-top: 0 !important; }
+  .hoja-img { display: block; width: auto; max-width: 100%; max-height: 263mm; margin: 0 auto; break-after: page; page-break-after: always; }
+  .hoja-img:last-child { break-after: auto; page-break-after: auto; }
 }
+.hoja-img { display: none; }
+@media print { .hoja-img { display: block; } }

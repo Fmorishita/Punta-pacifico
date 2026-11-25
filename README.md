@@ -37,6 +37,7 @@ Réplica del "Cotizador Punta Pacífico · Clúster 1" en `https://puntapacifico
 
 - **Esquemas de pago, textos, tasas de plusvalía, superficies y requisitos**: `cotizador/data/config.json`. Se edita el JSON y se publica; no hay que tocar código.
   - Cada esquema: `descuento` (%), `apartado` ($ o `null`), `apartadoTodo` (el 1er enganche completo se paga al apartar), `m1`/`m2` (meses de cada complemento), `pct` (primero/segundo/escritura, deben sumar 100), `engLibre` (permite enganche personalizado).
+  - **Esquema personalizado** (`"tipo": "flexible"`): el asesor define apartado, % del 1er enganche, meses para completarlo, mensualidad fija, número de mensualidades (vacío = hasta el mes anterior a la entrega del lote) y saldo contra entrega o a escritura. El PDF lleva la leyenda "Esquema personalizado sujeto a autorización comercial".
 - **Lista de precios**: `cotizador/data/inventario.json`. Las casas vendidas van con `"vendida": true` y `"precio": null`.
 - **Fórmulas**: `cotizador/calc.js`. Pruebas con los casos del original: `node tests/cotizador.test.js`.
 - **Acceso de gerente** (cotizar casas vendidas): lo valida `api/cotizador-gerente.js` en el servidor. En Vercel → *Settings* → *Environment Variables*:

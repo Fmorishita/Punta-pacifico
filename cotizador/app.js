@@ -18,7 +18,7 @@
   const W = 1224, H = 792; // marco de coordenadas de los pines
   const TOKEN_KEY = 'pp-cotizador-gerente';
 
-  const AJ0 = () => ({ desc: null, ap: null, m1: null, m2: null, engOn: false, eng: null });
+  const AJ0 = () => ({ desc: null, ap: null, m1: null, m2: null, engOn: false, eng: null, pct1: null, mens: null, saldo: null });
   const S = {
     cfg: null, lotes: [], pinesPlano: null, pinesRender: null,
     paso: 1, lote: null, esquema: null, descOn: false, aj: AJ0(), inicio: C.hoyISO(),
@@ -36,7 +36,7 @@
   const esq = () => S.cfg ? (S.cfg.esquemas.lista.find(e => e.id === S.esquema) || S.cfg.esquemas.lista[0]) : null;
   const precioDe = l => !l ? null : (l.vendida ? (S.gerente && S.vendidas[l.num] != null ? S.vendidas[l.num] : null) : l.precio);
   const puedeElegir = l => !!l && (!l.vendida || (S.gerente && S.vendidas[l.num] != null));
-  const ajustes = () => Object.assign({ descOn: S.descOn }, S.aj);
+  const ajustes = () => Object.assign({ descOn: S.descOn, inicio: S.inicio, entrega: S.lote ? S.lote.entrega : null }, S.aj);
   const calc = () => { const L = S.lote, e = esq(); return L && e ? C.calcular(precioDe(L), e, ajustes()) : null; };
   const texto = k => (S.cfg && S.cfg.textos[k]) || '';
 
@@ -81,8 +81,13 @@
       f('Precio final', C.mx(c.F), true);
       f('Pago inicial', C.mx(c.inicial));
       if (c.m1 > 0) f(c.m1 + ' mens. primer ' + c.p1 + '%', C.mx(c.mens1));
-      if (c.m2 > 0) f(c.m2 + ' mens. segundo ' + c.p2 + '%', C.mx(c.mens2));
-      f('A escritura', C.mx(c.esc), true);
+      if (c.flex) {
+        if (c.m2 > 0) f(c.m2 + ' mensualidades fijas', C.mx(c.mens2));
+        f(c.saldoEntrega ? 'Contra entrega' : 'A escritura', C.mx(c.esc), true);
+      } else {
+        if (c.m2 > 0) f(c.m2 + ' mens. segundo ' + c.p2 + '%', C.mx(c.mens2));
+        f('A escritura', C.mx(c.esc), true);
+      }
     }
     const cta = S.paso === 3 ? 'Volver al plano' : (S.paso === 2 ? 'Ver cotización' : 'Elegir esquema');
     $('aside').innerHTML =
@@ -96,7 +101,7 @@
         '<button type="button" class="btn btn-primary bp" data-acc="siguiente">' + K + cta + '</button>' +
         (S.paso === 3 ? '<button type="button" class="btn" data-acc="generar"' + (c ? '' : ' disabled') + '>Generar cotización</button>' : '') +
       '</div>' +
-      '<p class="pie">' + esc((L && L.vendida ? texto('legalVendida') + '. ' : '') + texto('pieLegal')) + '</p>';
+      '<p class="pie">' + esc((L && L.vendida ? texto('legalVendida') + '. ' : '') + (e && e.tipo === 'flexible' ? texto('legalPersonalizado') + ' ' : '') + texto('pieLegal')) + '</p>';
   }
 
   // ---------- Paso 1: plano y lotes ----------
@@ -202,6 +207,14 @@
   // ---------- Paso 2: esquemas y ajustes ----------
   function notaEng() {
     const c = calc(), e = esq();
+    if (c && c.flex) {
+      const ent = S.lote && S.lote.entrega ? C.mesAnio(S.lote.entrega) : '';
+      let t = 'Enganche ' + c.p1 + '%: ' + C.mx(c.pri) + ' (apartado ' + C.mx(c.ap) + (c.m1 ? ' + ' + c.m1 + ' × ' + C.mx(c.mens1) : '') + '). ';
+      t += c.m2 > 0 ? c.m2 + ' mensualidades de ' + C.mx(c.mens2) + ' = ' + C.mx(c.seg) + ' (' + c.p2 + '%). ' : 'Sin mensualidades fijas. ';
+      t += (c.saldoEntrega ? 'Saldo contra entrega' + (ent ? ' (' + ent + ')' : '') : 'Saldo a escritura') + ': ' + C.mx(c.esc) + ' (' + c.pe + '%).';
+      if (c.recortado) t += ' Ojo: el número de mensualidades se recortó para no rebasar el precio.';
+      return t;
+    }
     if (c && c.engOn) {
       return 'Enganche personalizado: ' + C.mx(c.pri) + ' (' + c.p1 + '% del precio final). ' +
         (c.seg > 0 ? 'El 2º complemento de ' + C.mx(c.seg) + ' completa el ' + c.pt + '%.' : 'Cubre el ' + (e.pct.primero + e.pct.segundo) + '% o más: no lleva 2º complemento y el excedente reduce el saldo a escritura.');
@@ -225,6 +238,19 @@
     const engValor = c ? String(Math.round(c.pri * 100) / 100) : '';
 
     let f = sw('desc', S.descOn, 'Aplicable a descuento');
+    if (e.tipo === 'flexible') {
+      if (S.descOn) f += campo('desc', 'Descuento aplicado (%)', 'type="number" inputmode="decimal" min="0" max="' + L.descuentoMax + '" step="0.5" value="' + x.desc + '"');
+      f += campo('ap', 'Apartado / anticipo ($)', 'type="number" inputmode="numeric" min="0" step="1000" value="' + x.ap + '"');
+      f += campo('pct1', '1er enganche (% del precio final)', 'type="number" inputmode="decimal" min="0" max="100" step="0.5" value="' + x.pct1 + '"');
+      if (!c || c.resto > 0) f += campo('m1', 'Meses para completar el enganche', 'type="number" inputmode="numeric" min="1" max="' + L.plazoMax + '" step="1" value="' + x.m1 + '"');
+      f += campo('mens', 'Mensualidad fija ($)', 'type="number" inputmode="numeric" min="0" step="500" value="' + x.mens + '"');
+      f += campo('m2', 'Número de mensualidades', 'type="number" inputmode="numeric" min="0" max="' + L.mensualidadesMax + '" step="1" placeholder="' + (c ? 'Hasta la entrega: ' + c.mensAuto : 'Hasta la entrega') + '" value="' + (S.aj.m2 != null ? S.aj.m2 : '') + '"');
+      f += '<div class="field"><label>Saldo final</label><div class="vistas" role="group" aria-label="Saldo final" style="height:36px">' +
+        [['entrega', 'Contra entrega'], ['escritura', 'A escritura']].map(([k, t]) =>
+          '<button type="button" class="sel" data-acc="saldo" data-v="' + k + '" aria-pressed="' + (x.saldo === k) + '" style="flex:1;white-space:nowrap;padding:6px 8px">' + t + '</button>').join('') + '</div></div>';
+      f += campo('inicio', 'Fecha de apartado', 'type="date" value="' + esc(S.inicio) + '"');
+      return htmlEsquemas(tarjetas, f, texto('notaFlexible'));
+    }
     if (S.descOn) f += campo('desc', 'Descuento aplicado (%)', 'type="number" inputmode="decimal" min="0" max="' + L.descuentoMax + '" step="0.5" value="' + x.desc + '"');
     if (!e.apartadoTodo) f += campo('ap', 'Anticipo apartado 1er pago ($)', 'type="number" inputmode="numeric" min="0" step="1000" value="' + x.ap + '"');
     if (e.engLibre) f += sw('eng', !!S.aj.engOn, 'Enganche personalizado');
@@ -232,7 +258,10 @@
     if (editaM1) f += campo('m1', 'Plazo complemento 1er enganche (meses)', 'type="number" inputmode="numeric" min="1" max="' + L.plazoMax + '" step="1" value="' + x.m1 + '"');
     if (e.pct.segundo > 0) f += campo('m2', 'Plazo complemento 2º enganche (meses)', 'type="number" inputmode="numeric" min="1" max="' + L.plazoMax + '" step="1" value="' + x.m2 + '"');
     f += campo('inicio', 'Fecha de apartado', 'type="date" value="' + esc(S.inicio) + '"');
+    return htmlEsquemas(tarjetas, f, texto('notaPlazos'));
+  }
 
+  function htmlEsquemas(tarjetas, f, pie) {
     return '<div class="card bp">' + K +
         '<h2 class="h2" style="margin-bottom:4px">Esquema de venta</h2>' +
         '<p class="nota">' + esc(S.cfg.esquemas.reglas[0] || '') + '</p>' +
@@ -243,7 +272,7 @@
         (S.lote ? '' : '<p class="nota" style="color:var(--text)">Elige un lote en el paso 01 para ver los importes.</p>') +
         '<div class="ajustes">' + f + '</div>' +
         '<p class="nota-eng" id="nota-eng">' + esc(notaEng()) + '</p>' +
-        '<p class="nota-pie">' + esc(texto('notaPlazos')) + '</p>' +
+        '<p class="nota-pie">' + esc(pie) + '</p>' +
       '</div>';
   }
 
@@ -257,9 +286,15 @@
     if (c.ap > 0) fila('Anticipo apartado', 'Forma parte del 1er enganche', '—', '1', C.mxf(c.ap));
     if (c.m1 > 0) fila('Primer ' + c.p1 + '%', c.m1 + ' mensualidades de ' + C.mx(c.mens1), c.p1 + '%', String(c.m1), C.mx(c.resto));
     else if (c.resto > 0) fila('Pago inicial ' + c.p1 + '%', 'Un solo pago', c.p1 + '%', '1', C.mx(c.resto));
-    if (c.m2 > 0) fila('Segundo ' + c.p2 + '%', c.m2 + ' mensualidades de ' + C.mx(c.mens2), c.p2 + '%', String(c.m2), C.mx(c.seg));
-    else if (c.seg > 0) fila('Diferido ' + c.p2 + '%', 'Un solo pago', c.p2 + '%', '1', C.mx(c.seg));
-    fila('Saldo a escritura', c.engOn ? c.pe + '% a escritura' : e.saldo, c.pe + '%', '1', C.mxf(c.esc));
+    if (c.flex) {
+      if (c.m2 > 0) fila('Mensualidades fijas', c.m2 + ' mensualidades de ' + C.mx(c.mens2), c.p2 + '%', String(c.m2), C.mx(c.seg));
+      if (c.saldoEntrega) fila('Saldo contra entrega', 'Entrega estimada ' + C.mesAnio(c.entrega), c.pe + '%', '1', C.mxf(c.esc));
+      else fila('Saldo a escritura', c.pe + '% a escritura', c.pe + '%', '1', C.mxf(c.esc));
+    } else {
+      if (c.m2 > 0) fila('Segundo ' + c.p2 + '%', c.m2 + ' mensualidades de ' + C.mx(c.mens2), c.p2 + '%', String(c.m2), C.mx(c.seg));
+      else if (c.seg > 0) fila('Diferido ' + c.p2 + '%', 'Un solo pago', c.p2 + '%', '1', C.mx(c.seg));
+      fila('Saldo a escritura', c.engOn ? c.pe + '% a escritura' : e.saldo, c.pe + '%', '1', C.mxf(c.esc));
+    }
     fila('Total', 'Precio final', '100%', '', C.mxf(c.F));
     return t;
   }
@@ -335,7 +370,7 @@
     const sup = cfg.superficies[L.tipo] || {};
     const m2 = v => v ? (+v).toFixed(2) + ' m²' : '—';
     const vacio = v => esc(v && v.trim() ? v.trim() : '—');
-    const legalV = L.vendida ? texto('legalVendida') : '';
+    const legalV = [L.vendida ? texto('legalVendida') : '', e.tipo === 'flexible' ? texto('legalPersonalizado') : ''].filter(Boolean).join('. ');
     const kv = (k, v, cls) => '<span>' + k + '</span><span' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</span>';
 
     // Recorte del plano técnico centrado en el lote
@@ -374,10 +409,15 @@
           '<span class="l">Remanente al 1er ' + c.p1 + '%:</span><span class="v">' + C.mxf(c.resto) + '</span>' +
           '<span class="plazo">Plazo Complemento 1er Enganche:</span><span class="v meses">' + (c.m1 > 0 ? c.m1 + ' meses' : 'N/A') + '</span>' +
           '<span class="etq oro">Mensualidad:</span><span class="v">' + (c.m1 > 0 ? C.mxf(c.mens1) : '—') + '</span>' +
-          '<span class="l pt' + oculto + '">Segundo Complemento ' + c.p2 + '% para cubrir total al ' + c.pt + '% Enganche:</span><span class="v pt' + oculto + '">' + C.mxf(c.seg) + '</span>' +
-          '<span class="plazo' + oculto + '">Plazo Complemento 2do Enganche:</span><span class="v meses' + oculto + '">' + c.m2 + ' meses</span>' +
+          (c.flex
+            ? '<span class="l pt' + oculto + '">Mensualidades fijas (' + c.p2 + '% del precio final):</span><span class="v pt' + oculto + '">' + C.mxf(c.seg) + '</span>' +
+              '<span class="plazo' + oculto + '">Plazo Mensualidades:</span><span class="v meses' + oculto + '">' + c.m2 + ' meses</span>'
+            : '<span class="l pt' + oculto + '">Segundo Complemento ' + c.p2 + '% para cubrir total al ' + c.pt + '% Enganche:</span><span class="v pt' + oculto + '">' + C.mxf(c.seg) + '</span>' +
+              '<span class="plazo' + oculto + '">Plazo Complemento 2do Enganche:</span><span class="v meses' + oculto + '">' + c.m2 + ' meses</span>') +
           '<span class="etq oro' + oculto + '">Mensualidad:</span><span class="v' + oculto + '">' + C.mxf(c.mens2) + '</span>' +
-          '<span class="l pt">Saldo a financiar al momento Escritura:</span><span class="v pt">' + C.mxf(c.esc) + '</span>' +
+          (c.flex && c.saldoEntrega
+            ? '<span class="l pt">Saldo contra entrega (' + C.mesAnio(c.entrega) + '):</span><span class="v pt">' + C.mxf(c.esc) + '</span>'
+            : '<span class="l pt">Saldo a financiar al momento Escritura:</span><span class="v pt">' + C.mxf(c.esc) + '</span>') +
         '</div></div>' +
         '<div class="h-col"><div class="h-banda c">Requisitos · Persona física</div><div class="h-req">' + reqs + '</div></div>' +
       '</div>' +
@@ -408,8 +448,10 @@
     const tot = [
       ['Apartado', C.mxf(c.ap)],
       [c.m1 + ' mens. primer tramo', C.mxf(c.mens1)],
-      c.m2 > 0 ? [c.m2 + ' mens. segundo tramo', C.mxf(c.mens2)] : ['Segundo complemento', 'No aplica'],
-      ['A escrituración', C.mxf(c.esc)]
+      c.flex
+        ? (c.m2 > 0 ? [c.m2 + ' mensualidades fijas', C.mxf(c.mens2)] : ['Mensualidades fijas', 'No aplica'])
+        : (c.m2 > 0 ? [c.m2 + ' mens. segundo tramo', C.mxf(c.mens2)] : ['Segundo complemento', 'No aplica']),
+      [c.flex && c.saldoEntrega ? 'Contra entrega' : 'A escrituración', C.mxf(c.esc)]
     ];
     let plus = '';
     if (cfg.plusvalia.mostrar !== false) {
@@ -478,7 +520,7 @@
   const esperarImagenes = el => Promise.all(Array.from(el.querySelectorAll('img')).map(im =>
     im.complete ? Promise.resolve() : new Promise(r => { im.onload = im.onerror = r; })));
 
-  let pdfToken = 0, pdfUrl = null, pdfFile = null;
+  let pdfToken = 0, pdfUrl = null, pdfFile = null, pdfImgs = [];
   async function generarPdf() {
     const L = S.lote;
     if (!L || !calc()) { S.paso = 1; render(); return; }
@@ -486,6 +528,7 @@
     const vigente = () => yo === pdfToken;
     if (pdfUrl) { URL.revokeObjectURL(pdfUrl); pdfUrl = null; }
     pdfFile = null;
+    pdfImgs = [];
     S.pdf = { estado: 'generando' };
     renderDialogo();
     const raiz = document.documentElement;
@@ -507,7 +550,9 @@
         const r = Math.min((PW - 2 * M) / cv.width, (PH - 2 * M) / cv.height);
         const w = cv.width * r, h = cv.height * r;
         if (i > 0) pdf.addPage('letter', 'portrait');
-        pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', (PW - w) / 2, M, w, h);
+        const jpg = cv.toDataURL('image/jpeg', 0.92);
+        pdfImgs.push(jpg);
+        pdf.addImage(jpg, 'JPEG', (PW - w) / 2, M, w, h);
       }
       if (!vigente()) return;
       const cliente = S.cliente.trim();
@@ -526,7 +571,14 @@
     }
   }
 
+  // Imprime las mismas imágenes que lleva el PDF: así no dependen de que el navegador
+  // imprima colores de fondo (por defecto no lo hace y las bandas salían en blanco).
   function imprimir() {
+    if (pdfImgs.length) {
+      $('hojas').innerHTML = pdfImgs.map((src, i) => '<img class="hoja-img" src="' + src + '" alt="Hoja ' + (i + 1) + '">').join('');
+      esperarImagenes($('hojas')).then(() => window.print());
+      return;
+    }
     $('hojas').innerHTML = hojas();
     esperarImagenes($('hojas')).then(() => { ajustarHojas(true); window.print(); });
   }
@@ -647,6 +699,7 @@
       case 'esquema': S.esquema = v; S.aj = AJ0(); render(); break;
       case 'desc': S.descOn = !S.descOn; S.aj.desc = null; render(); break;
       case 'eng': S.aj.engOn = !S.aj.engOn; S.aj.eng = null; render(); break;
+      case 'saldo': S.aj.saldo = v; render(); break;
       case 'generar': generarPdf(); break;
       case 'imprimir': imprimir(); break;
       case 'compartir':
@@ -660,7 +713,7 @@
   });
 
   function cerrarDialogo() {
-    if (S.pdf) pdfToken++;
+    if (S.pdf) { pdfToken++; pdfImgs = []; }
     S.login = null; S.pdf = null;
     renderDialogo();
   }
@@ -684,7 +737,12 @@
       case 'ap': S.aj.ap = Math.max(0, n || 0); break;
       case 'eng': S.aj.eng = n == null ? 0 : Math.max(0, n); break;
       case 'm1': S.aj.m1 = Math.max(1, Math.min(lim.plazoMax, Math.round(n) || 1)); break;
-      case 'm2': S.aj.m2 = Math.max(1, Math.min(lim.plazoMax, Math.round(n) || 1)); break;
+      case 'm2':
+        if (esq().tipo === 'flexible') S.aj.m2 = n == null ? null : Math.max(0, Math.min(lim.mensualidadesMax || 120, Math.round(n)));
+        else S.aj.m2 = Math.max(1, Math.min(lim.plazoMax, Math.round(n) || 1));
+        break;
+      case 'pct1': S.aj.pct1 = n == null ? 0 : Math.max(0, Math.min(100, n)); break;
+      case 'mens': S.aj.mens = Math.max(0, n || 0); break;
       case 'inicio': if (/^\d{4}-\d{2}-\d{2}$/.test(t)) S.inicio = t; break;
       default: S[id] = t; return; // datos del prospecto: no cambian importes
     }
@@ -695,11 +753,11 @@
   // Al salir del campo se normaliza (p. ej. plazo 0 → 1) y se ocultan/muestran campos dependientes.
   document.addEventListener('change', ev => {
     const id = ev.target.dataset && ev.target.dataset.campo;
-    if (id && ['desc', 'ap', 'eng', 'm1', 'm2', 'inicio'].includes(id)) render();
+    if (id && ['desc', 'ap', 'eng', 'm1', 'm2', 'inicio', 'pct1', 'mens'].includes(id)) render();
   });
 
   window.addEventListener('beforeprint', () => {
-    if (S.paso === 3 && S.lote && !$('hojas').innerHTML) { $('hojas').innerHTML = hojas(); ajustarHojas(true); }
+    if (S.paso === 3 && S.lote && !$('hojas').querySelector('.hoja-img')) { $('hojas').innerHTML = hojas(); ajustarHojas(true); }
   });
 
   // ---------- Arranque ----------

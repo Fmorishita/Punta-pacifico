@@ -109,12 +109,31 @@
     "integracion": "Apartado de $100,000; resto del 10% en 3 meses; sin 2º complemento",
     "apartadoTxt": "$100,000",
     "saldo": "90% a escritura"
+   },
+   {
+    "id": "flex",
+    "tipo": "flexible",
+    "nombre": "Esquema personalizado",
+    "descuento": 0,
+    "apartado": 200000,
+    "apartadoTodo": false,
+    "m1": 3,
+    "m2": null,
+    "pct": {
+     "primero": 10
+    },
+    "mensualidad": 15000,
+    "saldoFinal": "entrega",
+    "integracion": "Tú defines el apartado, el plazo para completar el enganche, la mensualidad fija y el saldo final",
+    "apartadoTxt": "a definir",
+    "saldo": "Saldo contra entrega o a escritura"
    }
   ]
  },
  "limites": {
   "descuentoMax": 50,
-  "plazoMax": 60
+  "plazoMax": 60,
+  "mensualidadesMax": 120
  },
  "plusvalia": {
   "mostrar": true,
@@ -158,6 +177,8 @@
   "pieLegal": "Cotización válida por 15 días naturales. Precios en pesos mexicanos, sujetos a cambio sin previo aviso. Cotización informativa; no constituye oferta vinculante. Cuota de mantenimiento por definir.",
   "legalVendida": "Esta cotización esta sujeta a revisión y confirmación de Dirección General",
   "legalHoja1": "Esta cotización es informativa y está sujeta a disponibilidad, vigencia, cambios de precio y autorización comercial.",
-  "legalHoja2": "Fechas estimadas a partir de la fecha de apartado. Proyección de valor ilustrativa; no constituye garantía de rendimiento. Cotización válida por 15 días naturales."
+  "legalHoja2": "Fechas estimadas a partir de la fecha de apartado. Proyección de valor ilustrativa; no constituye garantía de rendimiento. Cotización válida por 15 días naturales.",
+  "legalPersonalizado": "Esquema personalizado sujeto a autorización comercial.",
+  "notaFlexible": "Esquema personalizado: las mensualidades fijas arrancan al cubrir el 1er enganche. Si dejas vacío el número de mensualidades, se calculan hasta el mes anterior a la entrega del lote. Sin intereses."
  }
 }

@@ -89,6 +89,49 @@ caso('plusvalía LT011 (hoy nov 2026, entrega oct 2028)', () => {
   assert.strictEqual(((p.entCon / P11 - 1) * 100).toFixed(1), '15.9');
 });
 
+console.log('Esquema personalizado (flexible)');
+caso('LT031 · $200k + resto del 10% en 3 meses + $15k al mes + contra entrega', () => {
+  const L = lote(31);
+  const c = C.calcular(L.precio, E('flex'), { inicio: '2026-11-25', entrega: L.entrega });
+  assert.strictEqual(L.precio, 4352900);
+  assert.strictEqual(r2(c.pri), 435290);
+  assert.strictEqual(c.ap, 200000);
+  assert.strictEqual(c.m1, 3);
+  assert.strictEqual(r2(c.mens1), 78430);
+  assert.strictEqual(c.m2, 18, 'mensualidades hasta el mes anterior a la entrega (sep 2028)');
+  assert.strictEqual(c.mens2, 15000);
+  assert.strictEqual(r2(c.esc), 3647610);
+  assert.strictEqual(c.pe, '83.8');
+  assert.strictEqual(r2(c.ap + c.resto + c.seg + c.esc), r2(c.F));
+  const cal = C.calendario(c, '2026-11-25');
+  assert.strictEqual(cal.length, 1 + 3 + 18 + 1);
+  assert.strictEqual(C.fecha(cal[3].d), '25 feb 27');
+  assert.strictEqual(cal[4].k, 'Mensualidad 1/18');
+  assert.strictEqual(C.fecha(cal[4].d), '25 mar 27');
+  assert.strictEqual(C.fecha(cal[21].d), '25 ago 28');
+  assert.strictEqual(cal[22].k, 'Contra entrega 83.8%');
+  assert.strictEqual(C.fecha(cal[22].d), '25 sep 28');
+});
+caso('LT009 (vendida, precio de gerente) · $12k al mes, 12 meses, a escritura', () => {
+  const c = C.calcular(3789858, E('flex'), { inicio: '2026-11-25', entrega: '2028-08', mens: 12000, m2: 12, saldo: 'escritura' });
+  assert.strictEqual(r2(c.mens1), 59661.93);
+  assert.strictEqual(c.m2, 12);
+  assert.strictEqual(r2(c.esc), 3789858 - 378985.8 - 144000);
+  assert.strictEqual(c.saldoEntrega, false);
+  const cal = C.calendario(c, '2026-11-25');
+  assert.strictEqual(cal[cal.length - 1].k.startsWith('Escrituración'), true);
+});
+caso('mensualidades que rebasan el precio se recortan', () => {
+  const c = C.calcular(1000000, E('flex'), { inicio: '2026-11-25', entrega: '2028-08', mens: 100000, m2: 50 });
+  assert.strictEqual(c.recortado, true);
+  assert.strictEqual(c.m2, 9);
+  assert.ok(c.esc >= 0);
+});
+caso('fechas sin desbordar: 31 oct + 1 mes = 30 nov', () => {
+  assert.strictEqual(C.fecha(C.masMeses(C.fechaISO('2026-10-31'), 1)), '30 nov 26');
+  assert.strictEqual(C.fecha(C.masMeses(C.fechaISO('2026-10-31'), 4)), '28 feb 27');
+});
+
 console.log('Inventario');
 caso('55 lotes, 7 vendidos sin precio público, 48 disponibles', () => {
   assert.strictEqual(inv.lotes.length, 55);

@@ -14,11 +14,68 @@
   /** Valores editables del esquema; los que el asesor no tocó salen del Excel (esquema). */
   function entradas(e, aj) {
     aj = aj || {};
-    return {
+    const x = {
       desc: aj.descOn ? (aj.desc != null ? aj.desc : e.descuento) : 0,
       ap: aj.ap != null ? aj.ap : (e.apartado || 0),
       m1: aj.m1 != null ? aj.m1 : e.m1,
       m2: aj.m2 != null ? aj.m2 : e.m2
+    };
+    if (e.tipo === 'flexible') {
+      x.pct1 = aj.pct1 != null ? aj.pct1 : e.pct.primero;
+      x.mens = aj.mens != null ? aj.mens : (e.mensualidad || 0);
+      x.saldo = aj.saldo || e.saldoFinal || 'entrega';
+    }
+    return x;
+  }
+
+  /** Meses de calendario entre la fecha de apartado ("AAAA-MM-DD") y la entrega ("AAAA-MM"). */
+  function mesesEntre(inicio, entrega) {
+    if (!inicio || !entrega) return 0;
+    const [yi, mi] = String(inicio).split('-').map(Number);
+    const [ye, me] = String(entrega).split('-').map(Number);
+    return (ye - yi) * 12 + (me - mi);
+  }
+
+  /** Fecha de entrega: el mes del lote, el mismo día que la fecha de apartado (o el último del mes). */
+  function fechaEntrega(inicio, entrega) {
+    const base = fechaISO(inicio);
+    const [ye, me] = String(entrega).split('-').map(Number);
+    const ult = new Date(ye, me, 0).getDate();
+    return new Date(ye, me - 1, Math.min(base.getDate(), ult), 12);
+  }
+
+  /**
+   * Esquema flexible (personalizado): apartado + resto del 1er enganche en m1 meses,
+   * mensualidad fija durante n meses y el saldo contra entrega (o a escritura).
+   * Sin intereses. Si las mensualidades rebasan el precio, se reduce el número de meses.
+   */
+  function calcularFlexible(precio, e, aj) {
+    const x = entradas(e, aj);
+    const P = precio;
+    const D = P * x.desc / 100;
+    const F = P - D;
+    const pct1 = clamp(+x.pct1 || 0, 0, 100);
+    const pri = F * pct1 / 100;
+    const ap = clamp(x.ap, 0, pri);
+    const resto = Math.max(0, pri - ap);
+    const m1 = resto > 0 ? Math.max(1, x.m1 | 0) : 0;
+    const mens = Math.max(0, +x.mens || 0);
+    const auto = Math.max(0, mesesEntre(aj.inicio, aj.entrega) - m1 - 1);
+    let n = mens > 0 ? (x.m2 != null ? Math.max(0, x.m2 | 0) : auto) : 0;
+    const tope = mens > 0 ? Math.floor((F - pri) / mens + 1e-9) : 0;
+    const recortado = n > tope;
+    if (recortado) n = tope;
+    const seg = mens * n;
+    const esc = F - (pri + seg);
+    const fp = v => String(Math.round(v * 100) / 100);
+    const saldoEntrega = x.saldo !== 'escritura' && !!aj.entrega;
+    return {
+      P, D, F, desc: x.desc, pri, seg, esc, ap, m1, m2: n, resto, engOn: false,
+      p1: fp(pct1), p2: fp(seg / F * 100), pe: fp(esc / F * 100), pt: fp((pri + seg) / F * 100),
+      mens1: m1 > 0 ? resto / m1 : 0,
+      mens2: n > 0 ? mens : 0,
+      inicial: ap,
+      flex: true, mensAuto: auto, recortado, saldoEntrega, entrega: aj.entrega || null
     };
   }
 
@@ -26,11 +83,13 @@
    * Estructura de pago.
    * @param {number} precio  precio de lista del lote
    * @param {object} e       esquema (config.esquemas.lista[i])
-   * @param {object} aj      ajustes: {descOn, desc, ap, m1, m2, engOn, eng}
+   * @param {object} aj      ajustes: {descOn, desc, ap, m1, m2, engOn, eng}; en el flexible además
+   *                         {pct1, mens, saldo, inicio, entrega}
    */
   function calcular(precio, e, aj) {
     if (precio == null || !e) return null;
     aj = aj || {};
+    if (e.tipo === 'flexible') return calcularFlexible(precio, e, aj);
     const x = entradas(e, aj);
     const P = precio;
     const D = P * x.desc / 100;
@@ -57,10 +116,11 @@
     };
   }
 
+  /** Suma meses sin desbordar: 31 oct + 1 mes = 30 nov (no 1 dic). */
   function masMeses(base, n) {
-    const d = new Date(base.getTime());
-    d.setMonth(d.getMonth() + n);
-    return d;
+    const y = base.getFullYear(), m = base.getMonth() + n;
+    const ult = new Date(y, m + 1, 0).getDate();
+    return new Date(y, m, Math.min(base.getDate(), ult), base.getHours());
   }
 
   function masDias(base, n) {
@@ -86,6 +146,16 @@
       for (let i = 1; i <= c.m1; i++) fila('Primer ' + c.p1 + '% · ' + i + '/' + c.m1, masMeses(base, i), c.mens1);
     } else if (c.resto > 0) {
       fila('Pago inicial ' + c.p1 + '%', base, c.resto);
+    }
+    if (c.flex) {
+      for (let i = 1; i <= c.m2; i++) fila('Mensualidad ' + i + '/' + c.m2, masMeses(base, c.m1 + i), c.mens2);
+      let fin = masMeses(base, c.m1 + c.m2);
+      if (c.saldoEntrega) {
+        const ent = fechaEntrega(isoDe(base), c.entrega);
+        fin = ent > fin ? ent : masMeses(base, c.m1 + c.m2 + 1);
+      }
+      if (c.esc > 0.005) fila((c.saldoEntrega ? 'Contra entrega ' : 'Escrituración ') + c.pe + '%', fin, c.esc);
+      return out;
     }
     if (c.m2 > 0) {
       for (let i = 1; i <= c.m2; i++) fila('Segundo ' + c.p2 + '% · ' + i + '/' + c.m2, masMeses(base, c.m1 + i), c.mens2);
@@ -141,12 +211,17 @@
   };
   const fecha = d => d.getDate() + ' ' + MESES_CORTOS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
   const fechaCorta = d => String(d.getDate()).padStart(2, '0') + '-' + MESES_CORTOS[d.getMonth()] + '-' + d.getFullYear();
-  const hoyISO = () => {
-    const d = new Date();
+  function isoDe(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  const hoyISO = () => isoDe(new Date());
+  const mesAnio = entrega => {
+    if (!entrega) return '';
+    const [y, m] = String(entrega).split('-').map(Number);
+    return MESES[m - 1].charAt(0).toUpperCase() + MESES[m - 1].slice(1) + ' ' + y;
   };
 
-  const api = { entradas, calcular, calendario, plusvalia, masMeses, masDias, fechaISO, mx, mxf, mxc, fecha, fechaCorta, hoyISO, MESES };
+  const api = { entradas, calcular, calendario, plusvalia, masMeses, masDias, mesesEntre, fechaEntrega, fechaISO, isoDe, mx, mxf, mxc, fecha, fechaCorta, hoyISO, mesAnio, MESES };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.PPCalc = api;
 })(typeof self !== 'undefined' ? self : this);
