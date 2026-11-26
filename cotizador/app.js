@@ -21,7 +21,7 @@
   const TOKEN_KEY = 'pp-cotizador-sesion';
   const COL = { '2R': ['#c9a96e', '#8f7440', '#2b2110'], '3R': ['#2e6d8e', '#1d4c66', '#ffffff'], vend: ['#d3d0cb', '#a9a49c', '#5f5a53'], sel: ['#d8693f', '#a94a26', '#ffffff'] };
 
-  const AJ0 = () => ({ desc: null, ap: null, m1: null, m2: null, engOn: false, eng: null, pct1: null, mens: null, saldo: null });
+  const AJ0 = () => ({ desc: null, ap: null, m1: null, m2: null, engOn: false, eng: null, pct1: null, mens: null, modo: null, pctMens: null });
   const S = {
     cfg: null, lotes: [], lista: '', pinesPlano: null, pinesRender: null, sesion: null,
     paso: 1, lote: null, esquema: null, descOn: false, aj: AJ0(), inicio: C.hoyISO(), vigencia: null,
@@ -32,13 +32,14 @@
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pct = (v, total) => (v / total * 100).toFixed(3) + '%';
+  const lblAp = c => c.resto > 0 ? 'Primer pago enganche' : 'Pago inicial enganche';
   const tipoTxt = t => t === '2R' ? '2 recámaras' : '3 recámaras';
 
   // ---------- Datos derivados ----------
   const esq = () => S.cfg ? (S.cfg.esquemas.lista.find(e => e.id === S.esquema) || S.cfg.esquemas.lista[0]) : null;
   const precioDe = l => l ? l.precio : null;
   const puedeElegir = l => !!l && l.precio != null;
-  const ajustes = () => Object.assign({ descOn: S.descOn, inicio: S.inicio, entrega: S.lote ? S.lote.entrega : null }, S.aj);
+  const ajustes = () => Object.assign({ descOn: S.descOn, inicio: S.inicio, limite: S.cfg.limites.fechaLimiteEntrega }, S.aj);
   const calc = () => { const L = S.lote, e = esq(); return L && e && L.precio != null ? C.calcular(L.precio, e, ajustes()) : null; };
   const dias = () => S.vigencia != null ? S.vigencia : S.cfg.vigenciaDias;
   const venceEl = () => C.masDias(new Date(), dias());
@@ -161,10 +162,10 @@
         const f = [];
         const fila = (k, v, fuerte) => f.push('<div' + (fuerte ? ' class="fuerte"' : '') + '><span>' + esc(k) + '</span><span>' + esc(v) + '</span></div>');
         if (c.D > 0) fila('Descuento ' + c.desc + '%', '−' + C.mx(c.D));
-        fila('Apartado', C.mx(c.ap));
+        fila(lblAp(c), C.mx(c.ap));
         if (c.m1 > 0) fila(c.m1 + ' mens. enganche ' + c.p1 + '%', C.mx(c.mens1));
-        if (c.m2 > 0) fila(c.flex ? c.m2 + ' mensualidades fijas' : c.m2 + ' mens. segundo ' + c.p2 + '%', C.mx(c.mens2));
-        fila(c.flex && c.saldoEntrega ? 'Contra entrega ' + c.pe + '%' : 'A escritura ' + c.pe + '%', C.mx(c.esc), true);
+        if (c.m2 > 0) fila(c.flex ? c.m2 + ' mensualidades ' + c.p2 + '%' : c.m2 + ' mens. segundo ' + c.p2 + '%', C.mx(c.mens2), c.flex);
+        fila(c.flex ? 'Contra entrega ' + c.pe + '%' : 'A escritura ' + c.pe + '%', C.mx(c.esc), !c.flex);
         h += '<div class="res-filas">' + f.join('') + '</div></div>';
       } else {
         h += '<div class="res-vacio">Precio no disponible para esta casa.</div></div>';
@@ -229,7 +230,7 @@
       return '<span class="pin" style="left:' + pct(x - zx, zw) + ';top:' + pct(y - zy, zh) + ';width:' + pct(r * 2, zw) + ';height:' + pct(r * 2, zh) + ';' +
         'font-size:clamp(7px,' + (r * 1.15 / zw * 100).toFixed(3) + 'vw,13px);opacity:' + s.op + ';background:' + s.fill + ';color:' + s.fg + ';border-width:1px;border-color:' + s.stroke + '">' + n + '</span>';
     }).join('');
-    return '<div class="card"><div class="card-top"><div><h2 class="h2">Ubicación de ' + esc(L.lote) + '</h2><p class="sub2">Entrega estimada ' + esc(C.mesAnio(L.entrega)) + '</p></div>' +
+    return '<div class="card"><div class="card-top"><div><h2 class="h2">Ubicación de ' + esc(L.lote) + '</h2><p class="sub2">Entrega estimada ' + esc(C.anio(L.entrega)) + '</p></div>' +
       (L.vendida ? '<span class="chip off">Vendida</span>' : '<span class="chip ok">Disponible</span>') + '</div>' +
       '<div class="zoom" style="aspect-ratio:' + (zw / zh).toFixed(4) + '">' +
       '<img src="' + IMG[S.modo] + '" alt="Detalle del sembrado" style="left:' + pct(-zx, zw) + ';top:' + pct(-zy, zh) + ';width:' + pct(W, zw) + ';height:' + pct(H, zh) + '">' +
@@ -268,11 +269,14 @@
     const c = calc(), e = esq();
     if (!c) return '';
     if (c.flex) {
-      const ent = S.lote && S.lote.entrega ? C.mesAnio(S.lote.entrega) : '';
-      let t = '<b>Enganche ' + c.p1 + '%:</b> ' + C.mx(c.pri) + ' (apartado ' + C.mx(c.ap) + (c.m1 ? ' + ' + c.m1 + ' × ' + C.mx(c.mens1) : '') + '). ';
-      t += c.m2 > 0 ? '<b>' + c.m2 + ' mensualidades</b> de ' + C.mx(c.mens2) + ' = ' + C.mx(c.seg) + ' (' + c.p2 + '%). ' : 'Sin mensualidades fijas. ';
-      t += '<b>' + (c.saldoEntrega ? 'Contra entrega' + (ent ? ' (' + ent + ')' : '') : 'A escritura') + ':</b> ' + C.mx(c.esc) + ' (' + c.pe + '%).';
-      if (c.recortado) t += ' <b style="color:var(--warn)">El número de mensualidades se recortó para no rebasar el precio.</b>';
+      let t = '<b>Enganche ' + c.p1 + '%:</b> ' + C.mx(c.pri) + ' (primer pago ' + C.mx(c.ap) + (c.m1 ? ' + ' + c.m1 + ' × ' + C.mx(c.mens1) : '') + '). ';
+      t += c.m2 > 0 ? '<b>' + c.m2 + ' mensualidades</b> de ' + C.mx(c.mens2) + ' = ' + C.mx(c.seg) + ' (' + c.p2 + '%). ' : 'Sin mensualidades. ';
+      t += '<b>Contra entrega:</b> ' + C.mx(c.esc) + ' (' + c.pe + '%).';
+      const cal = C.calendario(c, S.inicio);
+      const ult = c.m2 > 0 ? cal[cal.length - 2] : null;
+      t += '<br><span class="muted">Máximo ' + c.maxN + ' mensualidades' + (ult ? ' · última: ' + C.fecha(ult.d) : '') + '.</span>';
+      if (c.excedido) t += ' <b style="color:var(--warn)">Se ajustó al máximo de ' + c.maxN + ' meses.</b>';
+      if (c.recortado) t += ' <b style="color:var(--warn)">Se recortaron mensualidades para no rebasar el precio.</b>';
       return t;
     }
     if (c.engOn) {
@@ -285,7 +289,7 @@
 
   function stats(s) {
     const ch = (t, cls) => '<span class="chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>';
-    if (s.tipo === 'flexible') return ch('Tú decides montos y plazos', 'gold') + ch('Contra entrega');
+    if (s.tipo === 'flexible') return ch('Tú decides montos y plazos', 'gold') + ch('Saldo contra entrega');
     return ch('Apartado ' + s.apartadoTxt) + ch(s.saldo) + (s.descuento ? ch('Hasta ' + s.descuento + '% desc.', 'gold') : '');
   }
 
@@ -306,14 +310,15 @@
     let f = sw('desc', S.descOn, 'Descuento', S.descOn ? 'Aplicado' : 'Sin descuento');
     if (S.descOn) f += campo('desc', 'Descuento aplicado', num + ' min="0" max="' + L.descuentoMax + '" step="0.5"', '', '%', x.desc);
     if (e.tipo === 'flexible') {
-      f += campo('ap', 'Apartado / anticipo', num + ' min="0" step="1000"', '$', '', x.ap);
+      f += campo('ap', 'Primer pago enganche', num + ' min="0" step="1000"', '$', '', x.ap);
       f += campo('pct1', 'Enganche total', num + ' min="0" max="100" step="0.5"', '', '% del precio', x.pct1);
       if (!c || c.resto > 0) f += campo('m1', 'Meses para completar enganche', num + ' min="1" max="' + L.plazoMax + '" step="1"', '', 'meses', x.m1);
-      f += campo('mens', 'Mensualidad fija', num + ' min="0" step="500"', '$', '', x.mens);
-      f += campo('m2', 'Número de mensualidades', num + ' min="0" max="' + L.mensualidadesMax + '" step="1" placeholder="' + (c ? 'Hasta la entrega: ' + c.mensAuto : 'Hasta la entrega') + '"', '', 'meses', S.aj.m2 != null ? S.aj.m2 : '');
-      f += '<div class="field"><span class="lbl">Saldo final</span><div class="seg full" style="height:44px;align-items:center">' +
-        [['entrega', 'Contra entrega'], ['escritura', 'A escritura']].map(([k, t]) =>
-          '<button type="button" data-acc="saldo" data-v="' + k + '" aria-pressed="' + (x.saldo === k) + '" style="height:38px">' + t + '</button>').join('') + '</div></div>';
+      f += '<div class="field"><span class="lbl">Mensualidades por</span><div class="seg full" style="height:44px;align-items:center">' +
+        [['monto', 'Monto fijo'], ['pct', '% del precio']].map(([k, t]) =>
+          '<button type="button" data-acc="modo-mens" data-v="' + k + '" aria-pressed="' + (x.modo === k) + '" style="height:38px">' + t + '</button>').join('') + '</div></div>';
+      if (x.modo === 'pct') f += campo('pctMens', '% a cubrir con mensualidades', num + ' min="0" max="100" step="0.5"', '', '% del precio', x.pctMens);
+      else f += campo('mens', 'Mensualidad fija', num + ' min="0" step="500"', '$', '', x.mens);
+      f += campo('m2', 'Número de mensualidades', num + ' min="0" max="' + (c ? c.maxN : 60) + '" step="1" placeholder="' + (c ? 'Máximo: ' + c.maxN : 'Máximo') + '"', '', 'meses', S.aj.m2 != null ? S.aj.m2 : '');
     } else {
       const editaM1 = !!(c ? c.resto > 0 : (!e.apartadoTodo && e.m1 > 0));
       if (!e.apartadoTodo) f += campo('ap', 'Anticipo de apartado', num + ' min="0" step="1000"', '$', '', x.ap);
@@ -340,12 +345,12 @@
     fila('Precio de venta', 'Lista vigente', '', '', C.mxf(c.P));
     if (c.D > 0) fila('Descuento aplicado', c.desc + '% sobre precio de venta', '', '', '−' + C.mxf(c.D));
     fila('Precio final', 'Base de cálculo del esquema', '', '', C.mxf(c.F), 'total');
-    if (c.ap > 0) fila('Anticipo de apartado', 'Forma parte del enganche', '—', '1', C.mxf(c.ap));
+    if (c.ap > 0) fila(lblAp(c), 'Forma parte del enganche', '—', '1', C.mxf(c.ap));
     if (c.m1 > 0) fila((c.flex ? 'Resto del enganche ' : 'Primer ') + c.p1 + '%', c.m1 + ' mensualidades de ' + C.mx(c.mens1), c.p1 + '%', String(c.m1), C.mx(c.resto));
     else if (c.resto > 0) fila('Pago inicial ' + c.p1 + '%', 'Un solo pago', c.p1 + '%', '1', C.mx(c.resto));
     if (c.flex) {
       if (c.m2 > 0) fila('Mensualidades fijas', c.m2 + ' mensualidades de ' + C.mx(c.mens2), c.p2 + '%', String(c.m2), C.mx(c.seg));
-      fila(c.saldoEntrega ? 'Saldo contra entrega' : 'Saldo a escritura', c.saldoEntrega ? 'Entrega estimada ' + C.mesAnio(c.entrega) : c.pe + '% a escritura', c.pe + '%', '1', C.mxf(c.esc), 'final');
+      fila('Saldo contra entrega', 'Se liquida a la escritura', c.pe + '%', '1', C.mxf(c.esc), 'final');
     } else {
       if (c.m2 > 0) fila('Segundo ' + c.p2 + '%', c.m2 + ' mensualidades de ' + C.mx(c.mens2), c.p2 + '%', String(c.m2), C.mx(c.seg));
       else if (c.seg > 0) fila('Diferido ' + c.p2 + '%', 'Un solo pago', c.p2 + '%', '1', C.mx(c.seg));
@@ -362,7 +367,7 @@
     const maxA = Math.max.apply(null, pv.anios.map(a => a.opt).concat([1]));
     const barras = pv.anios.map(a => ({ anio: String(a.a), et: C.mxc(a.con), h: (a.opt / maxA * 100).toFixed(1) + '%', hc: (a.con / a.opt * 100).toFixed(1) + '%' }));
     const delta = v => '+' + ((v / base - 1) * 100).toFixed(1) + '%';
-    const ent = pv.entTxt || '—';
+    const ent = C.anio(L.entrega) || '—';
     return {
       barras,
       proy: [
@@ -432,10 +437,10 @@
     const ubic = p.prefijoUbicacion + String(L.num).padStart(3, '0');
 
     // KPI de mensualidad principal
-    const mensK = c.m2 > 0 ? [c.flex ? 'Mensualidad fija' : 'Mensualidad 2º tramo', C.mx(c.mens2), c.m2 + ' meses'] : c.m1 > 0 ? ['Mensualidad enganche', C.mx(c.mens1), c.m1 + ' meses'] : ['Apartado', C.mx(c.ap), 'un pago'];
+    const mensK = c.m2 > 0 ? [c.flex ? 'Mensualidad' : 'Mensualidad 2º tramo', C.mx(c.mens2), c.m2 + ' meses · ' + c.p2 + '%'] : c.m1 > 0 ? ['Mensualidad enganche', C.mx(c.mens1), c.m1 + ' meses'] : ['Apartado', C.mx(c.ap), 'un pago'];
 
     // Barra de proporciones
-    const partes = [['Enganche', c.pri, '#b8923f'], [c.flex ? 'Mensualidades' : '2º enganche', c.seg, '#2e6d8e'], [c.flex && c.saldoEntrega ? 'Contra entrega' : 'Escritura', c.esc, '#14304d']].filter(x => x[1] > 0.005);
+    const partes = [['Enganche', c.pri, '#b8923f'], [c.flex ? 'Mensualidades' : '2º enganche', c.seg, '#2e6d8e'], [c.flex ? 'Contra entrega' : 'Escritura', c.esc, '#14304d']].filter(x => x[1] > 0.005);
     const barra = '<div class="hj-barra">' + partes.map(([, v, col]) => '<i style="width:' + (v / c.F * 100).toFixed(2) + '%;background:' + col + '"></i>').join('') + '</div>' +
       '<div class="hj-ley">' + partes.map(([t, v, col]) => '<span><i style="background:' + col + '"></i>' + t + ' ' + (v / c.F * 100).toFixed(1) + '%</span>').join('') + '</div>';
 
@@ -448,7 +453,7 @@
     r('Precio final', 'Base de cálculo', C.mxf(c.F), 'fuerte');
     grupo('Enganche ' + c.p1 + '% · reserva de precio y ubicación');
     r('Enganche ' + c.p1 + '%', '', C.mxf(c.pri));
-    r('Anticipo de apartado', '1er pago', C.mxf(c.ap));
+    r(lblAp(c), '', C.mxf(c.ap));
     r('Remanente del enganche', c.m1 > 0 ? 'Plazo complemento: ' + c.m1 + ' meses' : 'N/A', C.mxf(c.resto));
     if (c.m1 > 0) r('Mensualidad', c.m1 + ' pagos', C.mxf(c.mens1), 'mens');
     if (c.seg > 0) {
@@ -456,7 +461,7 @@
       r(c.flex ? 'Total mensualidades' : 'Segundo complemento', 'Plazo: ' + c.m2 + ' meses', C.mxf(c.seg));
       r('Mensualidad', c.m2 + ' pagos', C.mxf(c.mens2), 'mens');
     }
-    r(c.flex && c.saldoEntrega ? 'Saldo contra entrega' : 'Saldo a financiar a escritura', c.flex && c.saldoEntrega ? C.mesAnio(c.entrega) + ' · ' + c.pe + '%' : c.pe + '%', C.mxf(c.esc), 'final');
+    r(c.flex ? 'Saldo contra entrega' : 'Saldo a financiar a escritura', c.pe + '%', C.mxf(c.esc), 'final');
 
     const reqs = '<div class="hj-req">' + cfg.requisitos.entrega.map(t => '<div><i></i>' + esc(t) + '</div>').join('') +
       '<div class="sub">Se firman después</div>' + cfg.requisitos.firma.map(t => '<div class="firma"><i></i>' + esc(t) + '</div>').join('') + '</div>';
@@ -474,7 +479,7 @@
       '<div class="hj-pad">' +
         '<div class="hj-kpis">' +
           '<div class="hj-kpi"><div class="k">Casa</div><div class="v">' + esc(ubic) + '</div><div class="s">' + tipoTxt(L.tipo) + '</div></div>' +
-          '<div class="hj-kpi"><div class="k">Entrega estimada</div><div class="v">' + esc(C.mesAnio(L.entrega)) + '</div><div class="s">' + esc(p.cluster) + '</div></div>' +
+          '<div class="hj-kpi"><div class="k">Entrega estimada</div><div class="v">' + esc(C.anio(L.entrega)) + '</div><div class="s">' + esc(p.cluster) + '</div></div>' +
           '<div class="hj-kpi dest"><div class="k">Precio final</div><div class="v">' + C.mxf(c.F) + '</div><div class="s">' + (c.D > 0 ? 'Incluye ' + c.desc + '% de descuento' : esc(e.nombre)) + '</div></div>' +
           '<div class="hj-kpi"><div class="k">' + mensK[0] + '</div><div class="v">' + mensK[1] + '</div><div class="s">' + mensK[2] + '</div></div>' +
         '</div>' +
@@ -484,7 +489,7 @@
         '</div>' +
         '<div class="hj-2 hj-sec" style="grid-template-columns:1.45fr 1fr">' +
           '<div><div class="hj-tit">Propuesta económica · ' + esc(e.nombre) + '</div>' + barra + '<table class="hj-plan"><tbody>' + filas.join('') + '</tbody></table></div>' +
-          '<div><div class="hj-tit">Requisitos · persona física</div>' + reqs + '</div>' +
+          '<div class="hj-col"><div class="hj-tit">Requisitos · persona física</div>' + reqs + '</div>' +
         '</div>' +
         '<div class="hj-sec"><div class="hj-tit">Observaciones</div><p class="hj-obs">' + esc(S.obs) + '</p></div>' +
       '</div></div><div>' +
@@ -508,12 +513,13 @@
         return '<span class="i" data-fila>' + String(x.i + 1).padStart(2, '0') + '</span><span data-fila>' + C.fecha(x.d) + '</span><span class="' + b + '" data-fila>' + esc(x.k) + '</span><span class="r' + b + '" data-fila>' + C.mx(x.v) + '</span>';
       }).join('') + '</div>';
     const tot = [
-      ['Apartado', C.mxf(c.ap)],
+      ['Pago inicial enganche', C.mxf(c.ap)],
       [c.m1 + ' mens. enganche', c.m1 ? C.mxf(c.mens1) : 'No aplica'],
       c.flex ? (c.m2 > 0 ? [c.m2 + ' mensualidades fijas', C.mxf(c.mens2)] : ['Mensualidades fijas', 'No aplica'])
         : (c.m2 > 0 ? [c.m2 + ' mens. segundo tramo', C.mxf(c.mens2)] : ['Segundo complemento', 'No aplica']),
-      [c.flex && c.saldoEntrega ? 'Contra entrega' : 'A escrituración', C.mxf(c.esc)]
+      [c.flex ? 'Contra entrega' : 'A escrituración', C.mxf(c.esc)]
     ];
+    const destacado = c.m2 > 0 ? 2 : 3;
     let plus = '';
     if (cfg.plusvalia.mostrar !== false) {
       const pv = datosPlusvalia();
@@ -529,7 +535,7 @@
         '<div class="der"><div>Folio <b>' + esc(folio) + '</b> · ' + fechaH + ' · válida hasta ' + vence + '</div><div>' + vacio(S.cliente) + ' · ' + esc(ubic) + ' · ' + esc(e.nombre) + '</div></div></div>' +
       '<div class="hj-pad"><div class="hj-sec"><div class="hj-tit">Calendario de pagos</div>' +
         '<div class="hj-cal">' + col(cal.slice(0, mitad)) + col(cal.slice(mitad)) + '</div>' +
-        '<div class="hj-tot">' + tot.map((t, i) => '<div' + (i === 3 ? ' class="dest"' : '') + '><div class="k">' + esc(t[0]) + '</div><div class="v">' + t[1] + '</div></div>').join('') + '</div></div>' +
+        '<div class="hj-tot">' + tot.map((t, i) => '<div' + (i === destacado ? ' class="dest"' : '') + '><div class="k">' + esc(t[0]) + '</div><div class="v">' + t[1] + '</div></div>').join('') + '</div></div>' +
         plus + '</div>' +
       '<div class="hj-pie2">' + (leg.length ? '<div class="vend">' + esc(leg.join('. ')) + '.</div>' : '') + esc(texto('legalHoja2')) + '</div>' +
       '</div>';
@@ -697,7 +703,7 @@
       case 'esquema': S.esquema = v; S.aj = AJ0(); render(); break;
       case 'desc': S.descOn = !S.descOn; S.aj.desc = null; render(); break;
       case 'eng': S.aj.engOn = !S.aj.engOn; S.aj.eng = null; render(); break;
-      case 'saldo': S.aj.saldo = v; render(); break;
+      case 'modo-mens': S.aj.modo = v; render(); break;
       case 'generar': generarPdf(); break;
       case 'imprimir': imprimir(); break;
       case 'compartir': if (pdfFile && navigator.share) navigator.share({ files: [pdfFile], title: pdfFile.name }).catch(() => {}); break;
@@ -732,6 +738,7 @@
         break;
       case 'pct1': S.aj.pct1 = n == null ? 0 : Math.max(0, Math.min(100, n)); break;
       case 'mens': S.aj.mens = Math.max(0, n || 0); break;
+      case 'pctMens': S.aj.pctMens = n == null ? 0 : Math.max(0, Math.min(100, n)); break;
       case 'inicio': if (/^\d{4}-\d{2}-\d{2}$/.test(t)) S.inicio = t; break;
       case 'vigencia':
         if (n != null && n >= 1) {
@@ -749,7 +756,7 @@
   });
   document.addEventListener('change', ev => {
     const id = ev.target.dataset && ev.target.dataset.campo;
-    if (id && ['desc', 'ap', 'eng', 'm1', 'm2', 'inicio', 'pct1', 'mens', 'vigencia'].includes(id)) render();
+    if (id && ['desc', 'ap', 'eng', 'm1', 'm2', 'inicio', 'pct1', 'mens', 'pctMens', 'vigencia'].includes(id)) render();
   });
 
   window.addEventListener('beforeprint', () => {

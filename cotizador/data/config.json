@@ -118,15 +118,16 @@
     "apartado": 200000,
     "apartadoTodo": false,
     "m1": 3,
-    "m2": null,
     "pct": {
      "primero": 10
     },
     "mensualidad": 15000,
-    "saldoFinal": "entrega",
-    "integracion": "Tú defines el apartado, el plazo para completar el enganche, la mensualidad fija y el saldo final",
+    "integracion": "Tú defines el primer pago, el plazo del enganche y las mensualidades (monto fijo o % del precio); el resto contra entrega",
     "apartadoTxt": "a definir",
-    "saldo": "Saldo contra entrega o a escritura"
+    "saldo": "Saldo contra entrega",
+    "m2": null,
+    "modoMensualidad": "monto",
+    "pctMensualidades": 10
    }
   ]
  },
@@ -134,7 +135,8 @@
   "descuentoMax": 50,
   "plazoMax": 60,
   "mensualidadesMax": 120,
-  "vigenciaMax": 90
+  "vigenciaMax": 90,
+  "fechaLimiteEntrega": "2028-12"
  },
  "plusvalia": {
   "mostrar": true,
@@ -180,6 +182,6 @@
   "legalHoja1": "Esta cotización es informativa y está sujeta a disponibilidad, vigencia, cambios de precio y autorización comercial.",
   "legalHoja2": "Fechas estimadas a partir de la fecha de apartado. Proyección de valor ilustrativa; no constituye garantía de rendimiento. Cotización válida por {dias} días naturales.",
   "legalPersonalizado": "Esquema personalizado sujeto a autorización comercial.",
-  "notaFlexible": "Esquema personalizado: las mensualidades fijas arrancan al cubrir el 1er enganche. Si dejas vacío el número de mensualidades, se calculan hasta el mes anterior a la entrega del lote. Sin intereses."
+  "notaFlexible": "Esquema personalizado: las mensualidades arrancan al cubrir el enganche y no pueden pasar de la fecha límite de entrega. Si dejas vacío el número de mensualidades se usa el máximo. Sin intereses."
  }
 }

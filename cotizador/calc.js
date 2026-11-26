@@ -23,7 +23,8 @@
     if (e.tipo === 'flexible') {
       x.pct1 = aj.pct1 != null ? aj.pct1 : e.pct.primero;
       x.mens = aj.mens != null ? aj.mens : (e.mensualidad || 0);
-      x.saldo = aj.saldo || e.saldoFinal || 'entrega';
+      x.modo = aj.modo || e.modoMensualidad || 'monto';
+      x.pctMens = aj.pctMens != null ? aj.pctMens : (e.pctMensualidades != null ? e.pctMensualidades : 10);
     }
     return x;
   }
@@ -45,9 +46,11 @@
   }
 
   /**
-   * Esquema flexible (personalizado): apartado + resto del 1er enganche en m1 meses,
-   * mensualidad fija durante n meses y el saldo contra entrega (o a escritura).
-   * Sin intereses. Si las mensualidades rebasan el precio, se reduce el número de meses.
+   * Esquema flexible (personalizado): apartado + resto del enganche en m1 meses, mensualidades fijas y
+   * el saldo contra entrega (se paga a la escritura). Sin intereses.
+   * Las mensualidades no pueden pasar de la fecha límite (aj.limite, "AAAA-MM"): máximo de meses =
+   * meses entre el apartado y la fecha límite, menos los meses del enganche.
+   * Dos modos: "monto" (mensualidad fija × n meses) o "pct" (un % del precio final repartido en n meses).
    */
   function calcularFlexible(precio, e, aj) {
     const x = entradas(e, aj);
@@ -59,23 +62,31 @@
     const ap = clamp(x.ap, 0, pri);
     const resto = Math.max(0, pri - ap);
     const m1 = resto > 0 ? Math.max(1, x.m1 | 0) : 0;
-    const mens = Math.max(0, +x.mens || 0);
-    const auto = Math.max(0, mesesEntre(aj.inicio, aj.entrega) - m1 - 1);
-    let n = mens > 0 ? (x.m2 != null ? Math.max(0, x.m2 | 0) : auto) : 0;
-    const tope = mens > 0 ? Math.floor((F - pri) / mens + 1e-9) : 0;
-    const recortado = n > tope;
-    if (recortado) n = tope;
-    const seg = mens * n;
+    const maxN = aj.limite ? Math.max(0, mesesEntre(aj.inicio, aj.limite) - m1) : 120;
+    let n = x.m2 != null ? Math.max(0, x.m2 | 0) : maxN;
+    const excedido = n > maxN;
+    if (excedido) n = maxN;
+    let mens, seg, recortado = false;
+    if (x.modo === 'pct') {
+      seg = Math.min(F - pri, F * clamp(+x.pctMens || 0, 0, 100) / 100);
+      if (n === 0) seg = 0;
+      mens = n > 0 ? seg / n : 0;
+    } else {
+      mens = Math.max(0, +x.mens || 0);
+      const tope = mens > 0 ? Math.floor((F - pri) / mens + 1e-9) : 0;
+      if (n > tope) { n = tope; recortado = true; }
+      if (mens === 0) n = 0;
+      seg = mens * n;
+    }
     const esc = F - (pri + seg);
     const fp = v => String(Math.round(v * 100) / 100);
-    const saldoEntrega = x.saldo !== 'escritura' && !!aj.entrega;
     return {
       P, D, F, desc: x.desc, pri, seg, esc, ap, m1, m2: n, resto, engOn: false,
       p1: fp(pct1), p2: fp(seg / F * 100), pe: fp(esc / F * 100), pt: fp((pri + seg) / F * 100),
       mens1: m1 > 0 ? resto / m1 : 0,
       mens2: n > 0 ? mens : 0,
       inicial: ap,
-      flex: true, mensAuto: auto, recortado, saldoEntrega, entrega: aj.entrega || null
+      flex: true, modo: x.modo, maxN, excedido, recortado, saldoEntrega: true
     };
   }
 
@@ -141,7 +152,7 @@
     const out = [];
     let acum = 0;
     const fila = (k, d, v) => { acum += v; out.push({ k, d, v, acum }); };
-    if (c.ap > 0) fila('Apartado', base, c.ap);
+    if (c.ap > 0) fila(c.resto > 0 ? 'Primer pago enganche' : 'Pago inicial enganche', base, c.ap);
     if (c.m1 > 0) {
       for (let i = 1; i <= c.m1; i++) fila((c.flex ? 'Enganche ' : 'Primer ') + c.p1 + '% · ' + i + '/' + c.m1, masMeses(base, i), c.mens1);
     } else if (c.resto > 0) {
@@ -149,12 +160,8 @@
     }
     if (c.flex) {
       for (let i = 1; i <= c.m2; i++) fila('Mensualidad ' + i + '/' + c.m2, masMeses(base, c.m1 + i), c.mens2);
-      let fin = masMeses(base, c.m1 + c.m2);
-      if (c.saldoEntrega) {
-        const ent = fechaEntrega(isoDe(base), c.entrega);
-        fin = ent > fin ? ent : masMeses(base, c.m1 + c.m2 + 1);
-      }
-      if (c.esc > 0.005) fila((c.saldoEntrega ? 'Contra entrega ' : 'Escrituración ') + c.pe + '%', fin, c.esc);
+      // Sin fecha de entrega confirmada: el saldo se marca "A la entrega" (d = null).
+      if (c.esc > 0.005) fila('Contra entrega ' + c.pe + '%', null, c.esc);
       return out;
     }
     if (c.m2 > 0) {
@@ -209,20 +216,21 @@
     if (v >= 1e3) return '$' + Math.round(v / 1e3) + 'k';
     return '$' + Math.round(v);
   };
-  const fecha = d => d.getDate() + ' ' + MESES_CORTOS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
+  const fecha = d => !d ? 'A la entrega' : d.getDate() + ' ' + MESES_CORTOS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
   const fechaLarga = d => d.getDate() + ' de ' + MESES[d.getMonth()] + ' de ' + d.getFullYear();
   const fechaCorta = d => String(d.getDate()).padStart(2, '0') + '-' + MESES_CORTOS[d.getMonth()] + '-' + d.getFullYear();
   function isoDe(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   const hoyISO = () => isoDe(new Date());
+  const anio = entrega => entrega ? String(entrega).slice(0, 4) : '';
   const mesAnio = entrega => {
     if (!entrega) return '';
     const [y, m] = String(entrega).split('-').map(Number);
     return MESES[m - 1].charAt(0).toUpperCase() + MESES[m - 1].slice(1) + ' ' + y;
   };
 
-  const api = { entradas, calcular, calendario, plusvalia, masMeses, masDias, mesesEntre, fechaEntrega, fechaISO, isoDe, mx, mxf, mxc, fecha, fechaCorta, fechaLarga, hoyISO, mesAnio, MESES };
+  const api = { entradas, calcular, calendario, plusvalia, masMeses, masDias, mesesEntre, fechaEntrega, fechaISO, isoDe, mx, mxf, mxc, fecha, fechaCorta, fechaLarga, hoyISO, mesAnio, anio, MESES };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.PPCalc = api;
 })(typeof self !== 'undefined' ? self : this);

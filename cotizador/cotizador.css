@@ -281,7 +281,10 @@ aside { position: sticky; top: 84px; display: flex; flex-direction: column; gap:
 .hj-plan tr.final td:nth-child(2) { color: rgba(255, 255, 255, .7); }
 .hj-plan tr.final td:first-child { padding-left: 8px; border-radius: 6px 0 0 6px; } .hj-plan tr.final td:last-child { padding-right: 8px; border-radius: 0 6px 6px 0; font-size: 13px; }
 
-.hj-req { display: grid; grid-template-columns: 1fr; gap: 4px; }
+.hj-col { display: flex; flex-direction: column; }
+.hj-req { display: flex; flex-direction: column; gap: 4px; }
+.hj-col .hj-req { flex: 1; justify-content: space-between; padding-bottom: 2px; font-size: 11px; }
+.hj-col .hj-req i { width: 11px; height: 11px; }
 .hj-req div { display: flex; align-items: center; gap: 7px; }
 .hj-req i { flex: none; width: 10px; height: 10px; border: 1.3px solid var(--navy); border-radius: 3px; }
 .hj-req .firma { color: var(--muted); } .hj-req .firma i { border-color: #b8bec6; }
