@@ -90,14 +90,14 @@ caso('plusvalía LT011 (hoy nov 2026, entrega oct 2028)', () => {
 });
 
 console.log('Esquema personalizado (flexible)');
-const LIM = cfg.limites.fechaLimiteEntrega;
+const MAX = cfg.limites.mensualidadesMaxFlex;
 caso('LT031 · $200k + resto del 10% en 3 meses + 20 × $15,000 + contra entrega', () => {
   const L = lote(31);
-  const c = C.calcular(L.precio, E('flex'), { inicio: '2026-11-25', limite: LIM, m2: 20 });
+  const c = C.calcular(L.precio, E('flex'), { inicio: '2026-11-25', maxMeses: MAX, m2: 20 });
   assert.strictEqual(r2(c.pri), 435290);
   assert.strictEqual(c.ap, 200000);
   assert.strictEqual(r2(c.mens1), 78430);
-  assert.strictEqual(c.maxN, 22, 'nov 2026 → dic 2028 = 25 meses, menos 3 del enganche');
+  assert.strictEqual(c.maxN, 24);
   assert.strictEqual(c.m2, 20);
   assert.strictEqual(c.mens2, 15000);
   assert.strictEqual(r2(c.esc), 4352900 - 435290 - 300000);
@@ -111,26 +111,25 @@ caso('LT031 · $200k + resto del 10% en 3 meses + 20 × $15,000 + contra entrega
   assert.strictEqual(C.fecha(cal[24].d), 'A la entrega');
 });
 caso('sin número de mensualidades usa el máximo; más del máximo se topa', () => {
-  const c = C.calcular(4352900, E('flex'), { inicio: '2026-11-25', limite: LIM });
-  assert.strictEqual(c.m2, 22);
-  const d = C.calcular(4352900, E('flex'), { inicio: '2026-11-25', limite: LIM, m2: 30 });
-  assert.strictEqual(d.m2, 22); assert.strictEqual(d.excedido, true);
-  // la última mensualidad cae en dic 2028
-  assert.strictEqual(C.fecha(C.calendario(c, '2026-11-25')[25].d), '25 dic 28');
+  const c = C.calcular(4352900, E('flex'), { inicio: '2026-11-25', maxMeses: MAX });
+  assert.strictEqual(c.m2, 24);
+  const d = C.calcular(4352900, E('flex'), { inicio: '2026-11-25', maxMeses: MAX, m2: 30 });
+  assert.strictEqual(d.m2, 24); assert.strictEqual(d.excedido, true);
+  assert.strictEqual(C.fecha(C.calendario(c, '2026-11-25')[27].d), '25 feb 29');
 });
 caso('modo %: 10% del precio en 20 meses calcula la mensualidad', () => {
-  const c = C.calcular(4352900, E('flex'), { inicio: '2026-11-25', limite: LIM, m2: 20, modo: 'pct', pctMens: 10 });
+  const c = C.calcular(4352900, E('flex'), { inicio: '2026-11-25', maxMeses: MAX, m2: 20, modo: 'pct', pctMens: 10 });
   assert.strictEqual(r2(c.seg), 435290);
   assert.strictEqual(r2(c.mens2), 21764.5);
   assert.strictEqual(c.pe, '80');
 });
 caso('LT009 (vendida, precio de gerente) · $12k × 12', () => {
-  const c = C.calcular(3789858, E('flex'), { inicio: '2026-11-25', limite: LIM, mens: 12000, m2: 12 });
+  const c = C.calcular(3789858, E('flex'), { inicio: '2026-11-25', maxMeses: MAX, mens: 12000, m2: 12 });
   assert.strictEqual(r2(c.mens1), 59661.93);
   assert.strictEqual(r2(c.esc), 3789858 - 378985.8 - 144000);
 });
 caso('mensualidades que rebasan el precio se recortan', () => {
-  const c = C.calcular(1000000, E('flex'), { inicio: '2026-11-25', limite: LIM, mens: 100000, m2: 20 });
+  const c = C.calcular(1000000, E('flex'), { inicio: '2026-11-25', maxMeses: MAX, mens: 100000, m2: 20 });
   assert.strictEqual(c.recortado, true);
   assert.strictEqual(c.m2, 9);
   assert.ok(c.esc >= 0);

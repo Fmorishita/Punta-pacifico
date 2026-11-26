@@ -14,7 +14,9 @@
     color: '/assets/cotizador/img/plano-color.png',
     bn: '/assets/cotizador/img/plano-bn.png',
     render: '/assets/cotizador/img/plano-render.jpg',
-    portada: '/assets/cotizador/img/portada-mar.jpg'
+    portada: '/assets/cotizador/img/portada-mar.jpg',
+    logoB: '/assets/cotizador/img/logo-blanco.png',
+    logoA: '/assets/cotizador/img/logo-azul.png'
   };
   const LIBS = ['/assets/cotizador/vendor/html2canvas-1.4.1.min.js', '/assets/cotizador/vendor/jspdf-2.5.1.umd.min.js'];
   const W = 1224, H = 792; // marco de coordenadas de los pines
@@ -39,7 +41,7 @@
   const esq = () => S.cfg ? (S.cfg.esquemas.lista.find(e => e.id === S.esquema) || S.cfg.esquemas.lista[0]) : null;
   const precioDe = l => l ? l.precio : null;
   const puedeElegir = l => !!l && l.precio != null;
-  const ajustes = () => Object.assign({ descOn: S.descOn, inicio: S.inicio, limite: S.cfg.limites.fechaLimiteEntrega }, S.aj);
+  const ajustes = () => Object.assign({ descOn: S.descOn, inicio: S.inicio, maxMeses: S.cfg.limites.mensualidadesMaxFlex }, S.aj);
   const calc = () => { const L = S.lote, e = esq(); return L && e && L.precio != null ? C.calcular(L.precio, e, ajustes()) : null; };
   const dias = () => S.vigencia != null ? S.vigencia : S.cfg.vigenciaDias;
   const venceEl = () => C.masDias(new Date(), dias());
@@ -474,7 +476,7 @@
 
     const h1 = '<div class="hoja" data-hoja="1"><div>' +
       '<div class="hj-hero"><img src="' + IMG.portada + '" alt=""><div class="vel"></div>' +
-        '<div class="izq"><div class="marca-g">' + esc(p.nombre) + '</div><div class="lema">' + esc(p.lema) + '</div></div>' +
+        '<div class="izq"><img class="logo" src="' + IMG.logoB + '" alt="' + esc(p.nombre) + '"></div>' +
         '<div class="der"><div class="t">Cotización</div><dl><dt>Folio</dt><dd>' + esc(folio) + '</dd><dt>Fecha</dt><dd>' + fechaH + '</dd><dt>Válida hasta</dt><dd>' + vence + '</dd></dl></div></div>' +
       '<div class="hj-pad">' +
         '<div class="hj-kpis">' +
@@ -531,7 +533,7 @@
         '<div class="hj-tot">' + pv.proy.map(q => '<div><div class="k">' + esc(q.k) + '</div><div class="v">' + q.v + '</div><div class="d"' + (q.base ? ' style="color:var(--muted)"' : '') + '>' + esc(q.d) + '</div></div>').join('') + '</div></div>';
     }
     const h2 = '<div class="hoja" data-hoja="2">' +
-      '<div class="hj-cab2"><div><div class="marca-g">' + esc(p.nombre) + '</div><div class="lema">' + esc(p.lema) + '</div></div>' +
+      '<div class="hj-cab2"><img class="logo" src="' + IMG.logoA + '" alt="' + esc(p.nombre) + '">' +
         '<div class="der"><div>Folio <b>' + esc(folio) + '</b> · ' + fechaH + ' · válida hasta ' + vence + '</div><div>' + vacio(S.cliente) + ' · ' + esc(ubic) + ' · ' + esc(e.nombre) + '</div></div></div>' +
       '<div class="hj-pad"><div class="hj-sec"><div class="hj-tit">Calendario de pagos</div>' +
         '<div class="hj-cal">' + col(cal.slice(0, mitad)) + col(cal.slice(mitad)) + '</div>' +

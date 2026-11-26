@@ -62,7 +62,7 @@
     const ap = clamp(x.ap, 0, pri);
     const resto = Math.max(0, pri - ap);
     const m1 = resto > 0 ? Math.max(1, x.m1 | 0) : 0;
-    const maxN = aj.limite ? Math.max(0, mesesEntre(aj.inicio, aj.limite) - m1) : 120;
+    const maxN = aj.maxMeses != null ? aj.maxMeses : 24;
     let n = x.m2 != null ? Math.max(0, x.m2 | 0) : maxN;
     const excedido = n > maxN;
     if (excedido) n = maxN;

@@ -33,6 +33,7 @@ button { cursor: pointer; }
 .acceso { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: #0c1c2b url('/assets/cotizador/img/hero-mar.jpg') center 40% / cover no-repeat; }
 .acceso::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 24, 38, .25) 0%, rgba(10, 24, 38, .65) 100%); }
 .acceso-card { position: relative; width: min(400px, 100%); padding: 32px 28px 26px; background: rgba(255, 255, 255, .94); backdrop-filter: blur(10px); border-radius: 22px; box-shadow: 0 30px 80px rgba(0, 0, 0, .35); }
+.acceso-card .logo { width: 200px; height: auto; margin: 0 auto 4px; }
 .acceso-card .marca-g { font-family: var(--serif); font-size: 36px; font-weight: 600; line-height: 1; color: var(--navy); }
 .acceso-card .lema { margin-top: 6px; font-size: 11px; letter-spacing: .26em; text-transform: uppercase; color: var(--gold); }
 .acceso-card h1 { margin: 22px 0 4px; font-size: 18px; font-weight: 600; color: var(--ink); }
@@ -237,9 +238,10 @@ aside { position: sticky; top: 84px; display: flex; flex-direction: column; gap:
 .hj-pad { padding: 0 30px; }
 
 .hj-hero { position: relative; height: 250px; overflow: hidden; border-radius: 0 0 18px 18px; }
-.hj-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 45%; }
+.hj-hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 45%; }
 .hj-hero .vel { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10, 24, 38, .78) 0%, rgba(10, 24, 38, .35) 55%, rgba(10, 24, 38, .05) 100%); }
 .hj-hero .izq { position: absolute; left: 30px; bottom: 50px; color: #fff; }
+.hj-hero .logo { width: 200px; height: auto; }
 .hj-hero .marca-g { font-family: var(--serif); font-size: 44px; font-weight: 600; line-height: .95; }
 .hj-hero .lema { margin-top: 8px; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold-2); }
 .hj-hero .der { position: absolute; right: 26px; top: 22px; padding: 12px 16px; border-radius: 12px; background: rgba(255, 255, 255, .95); color: var(--ink); min-width: 190px; }
@@ -308,6 +310,7 @@ aside { position: sticky; top: 84px; display: flex; flex-direction: column; gap:
 .hj-pie .vend { color: var(--gold-2); font-weight: 700; }
 
 .hj-cab2 { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 30px 14px; border-bottom: 1px solid var(--line); }
+.hj-cab2 .logo { width: 128px; height: auto; }
 .hj-cab2 .marca-g { font-family: var(--serif); font-size: 26px; font-weight: 600; line-height: 1; color: var(--navy); }
 .hj-cab2 .lema { margin-top: 4px; font-size: 8.5px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); }
 .hj-cab2 .der { text-align: right; font-size: 10px; color: var(--muted); }
