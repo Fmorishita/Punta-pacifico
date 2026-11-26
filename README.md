@@ -38,9 +38,9 @@ Réplica del "Cotizador Punta Pacífico · Clúster 1" en `https://puntapacifico
 - **Esquemas de pago, textos, tasas de plusvalía, superficies y requisitos**: `cotizador/data/config.json`. Se edita el JSON y se publica; no hay que tocar código.
   - Cada esquema: `descuento` (%), `apartado` ($ o `null`), `apartadoTodo` (el 1er enganche completo se paga al apartar), `m1`/`m2` (meses de cada complemento), `pct` (primero/segundo/escritura, deben sumar 100), `engLibre` (permite enganche personalizado).
   - **Esquema personalizado** (`"tipo": "flexible"`): el asesor define apartado, % del 1er enganche, meses para completarlo, mensualidad fija, número de mensualidades (vacío = hasta el mes anterior a la entrega del lote) y saldo contra entrega o a escritura. El PDF lleva la leyenda "Esquema personalizado sujeto a autorización comercial".
-- **Lista de precios**: `cotizador/data/inventario.json`. Las casas vendidas van con `"vendida": true` y `"precio": null`.
+- **Lista de precios**: `api/_data/inventario.json` (no se publica como archivo; solo la entrega la API con sesión). Las casas vendidas van con `"vendida": true` y `"precio": null`.
 - **Fórmulas**: `cotizador/calc.js`. Pruebas con los casos del original: `node tests/cotizador.test.js`.
-- **Acceso de gerente** (cotizar casas vendidas): lo valida `api/cotizador-gerente.js` en el servidor. En Vercel → *Settings* → *Environment Variables*:
+- **Acceso**: todo el cotizador pide correo y contraseña. Lo valida `api/cotizador-acceso.js`; la sesión dura 12 h y es por pestaña (al cerrar la pestaña se vuelve a pedir). En Vercel → *Settings* → *Environment Variables*:
   - `GERENTE_EMAIL` (uno o varios separados por coma) y `GERENTE_PASSWORD`
   - `COTIZADOR_SECRET`: texto largo al azar (firma la sesión de 12 h)
   - `COTIZADOR_VENDIDAS`: precios de las vendidas, p. ej. `{"9":1234567,"10":2345678.5}`. Al vender una casa: márcala `vendida` en el inventario y agrega su precio aquí.
@@ -57,7 +57,7 @@ en.html           versión en inglés (USD)
 styles.css        diseño (desktop + móvil)
 main.js           animaciones, gráficas, modal, formularios en 2 pasos y citas
 api/zoom-meeting.js  función serverless que crea la videollamada de Zoom
-api/cotizador-gerente.js  valida el acceso de gerente del cotizador
+api/cotizador-acceso.js  valida el acceso al cotizador y entrega el inventario
 cotizador/        cotizador: index.html, app.js, calc.js, cotizador.css y data/*.json
 tests/            pruebas del cotizador (node tests/cotizador.test.js)
 privacidad.html / privacy.html  aviso de privacidad

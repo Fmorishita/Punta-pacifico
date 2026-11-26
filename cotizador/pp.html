@@ -4,30 +4,43 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
 <title>Cotizador Punta Pacífico</title>
-<meta name="description" content="Cotizador de casas Punta Pacífico · Clúster 1, Ensenada.">
+<meta name="description" content="Cotizador privado de casas Punta Pacífico · Clúster 1, Ensenada.">
+<meta name="theme-color" content="#14304d">
 <link rel="icon" href="/favicon.ico">
 <link rel="preload" href="/assets/cotizador/fonts/barlow-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/assets/cotizador/fonts/barlow-condensed-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/cotizador/fonts/cormorant-garamond.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/cotizador/cotizador.css">
 <script src="/cotizador/calc.js" defer></script>
 <script src="/cotizador/app.js" defer></script>
 </head>
 <body>
-<header class="top" id="top">
-  <div style="display:flex;align-items:baseline;gap:14px">
-    <span class="marca">Punta Pacífico</span>
-    <span class="sub" id="sub">Clúster 1</span>
+<div class="acceso" id="acceso">
+  <div class="acceso-card">
+    <img class="logo" src="/assets/cotizador/img/logo-azul.png" alt="Punta Pacífico · Oceanview Living · Ensenada">
+    <h1>Cotizador privado</h1>
+    <p>Inicia sesión para continuar.</p>
+    <form id="form-acceso" autocomplete="on">
+      <div class="field"><label for="ac-email">Correo</label><div class="inp"><input id="ac-email" type="email" autocomplete="username" required></div></div>
+      <div class="field"><label for="ac-pass">Contraseña</label><div class="inp"><input id="ac-pass" type="password" autocomplete="current-password" required></div></div>
+      <p class="err" id="ac-err" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary" id="ac-btn">Entrar</button>
+    </form>
   </div>
-  <div class="top-der" id="top-der"></div>
+</div>
+
+<header class="top" hidden id="top">
+  <div class="top-in">
+    <div class="marca"><span class="m">Punta Pacífico</span><span class="s" id="sub">Clúster 1</span></div>
+    <div class="top-der" id="top-der"></div>
+  </div>
 </header>
 
-<div class="pagina">
+<div class="pagina" hidden id="pagina">
   <main>
     <nav class="pasos" id="pasos" aria-label="Pasos de la cotización"></nav>
-    <section class="vista" id="vista" aria-live="polite">
-      <p class="muted">Cargando inventario…</p>
-    </section>
+    <section class="vista" id="vista" aria-live="polite"></section>
     <div class="hojas" id="hojas" aria-hidden="true"></div>
   </main>
   <aside id="aside"></aside>

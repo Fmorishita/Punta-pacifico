@@ -118,22 +118,25 @@
     "apartado": 200000,
     "apartadoTodo": false,
     "m1": 3,
-    "m2": null,
     "pct": {
      "primero": 10
     },
     "mensualidad": 15000,
-    "saldoFinal": "entrega",
-    "integracion": "Tú defines el apartado, el plazo para completar el enganche, la mensualidad fija y el saldo final",
+    "integracion": "Tú defines el primer pago, el plazo del enganche y las mensualidades (monto fijo o % del precio); el resto contra entrega",
     "apartadoTxt": "a definir",
-    "saldo": "Saldo contra entrega o a escritura"
+    "saldo": "Saldo contra entrega",
+    "m2": null,
+    "modoMensualidad": "monto",
+    "pctMensualidades": 10
    }
   ]
  },
  "limites": {
   "descuentoMax": 50,
   "plazoMax": 60,
-  "mensualidadesMax": 120
+  "mensualidadesMax": 120,
+  "vigenciaMax": 90,
+  "mensualidadesMaxFlex": 24
  },
  "plusvalia": {
   "mostrar": true,
@@ -174,11 +177,11 @@
  },
  "textos": {
   "notaPlazos": "Cada esquema carga los valores del Excel; puedes ajustarlos y todo se recalcula. El 2º complemento arranca una vez cubierto el 1er enganche. Sin intereses.",
-  "pieLegal": "Cotización válida por 15 días naturales. Precios en pesos mexicanos, sujetos a cambio sin previo aviso. Cotización informativa; no constituye oferta vinculante. Cuota de mantenimiento por definir.",
+  "pieLegal": "Cotización válida por {dias} días naturales. Precios en pesos mexicanos, sujetos a cambio sin previo aviso. Cotización informativa; no constituye oferta vinculante. Cuota de mantenimiento por definir.",
   "legalVendida": "Esta cotización esta sujeta a revisión y confirmación de Dirección General",
   "legalHoja1": "Esta cotización es informativa y está sujeta a disponibilidad, vigencia, cambios de precio y autorización comercial.",
-  "legalHoja2": "Fechas estimadas a partir de la fecha de apartado. Proyección de valor ilustrativa; no constituye garantía de rendimiento. Cotización válida por 15 días naturales.",
+  "legalHoja2": "Fechas estimadas a partir de la fecha de apartado. Proyección de valor ilustrativa; no constituye garantía de rendimiento. Cotización válida por {dias} días naturales.",
   "legalPersonalizado": "Esquema personalizado sujeto a autorización comercial.",
-  "notaFlexible": "Esquema personalizado: las mensualidades fijas arrancan al cubrir el 1er enganche. Si dejas vacío el número de mensualidades, se calculan hasta el mes anterior a la entrega del lote. Sin intereses."
+  "notaFlexible": "Esquema personalizado: las mensualidades arrancan al cubrir el enganche, hasta 24 meses. Si dejas vacío el número de mensualidades se usa el máximo. Sin intereses."
  }
 }

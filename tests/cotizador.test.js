@@ -8,7 +8,7 @@ const assert = require('assert');
 const path = require('path');
 const C = require(path.join(__dirname, '..', 'cotizador', 'calc.js'));
 const cfg = require(path.join(__dirname, '..', 'cotizador', 'data', 'config.json'));
-const inv = require(path.join(__dirname, '..', 'cotizador', 'data', 'inventario.json'));
+const inv = require(path.join(__dirname, '..', 'api', '_data', 'inventario.json'));
 
 const E = id => cfg.esquemas.lista.find(e => e.id === id);
 const lote = n => inv.lotes.find(l => l.num === n);
@@ -90,39 +90,46 @@ caso('plusvalía LT011 (hoy nov 2026, entrega oct 2028)', () => {
 });
 
 console.log('Esquema personalizado (flexible)');
-caso('LT031 · $200k + resto del 10% en 3 meses + $15k al mes + contra entrega', () => {
+const MAX = cfg.limites.mensualidadesMaxFlex;
+caso('LT031 · $200k + resto del 10% en 3 meses + 20 × $15,000 + contra entrega', () => {
   const L = lote(31);
-  const c = C.calcular(L.precio, E('flex'), { inicio: '2026-11-25', entrega: L.entrega });
-  assert.strictEqual(L.precio, 4352900);
+  const c = C.calcular(L.precio, E('flex'), { inicio: '2026-11-25', maxMeses: MAX, m2: 20 });
   assert.strictEqual(r2(c.pri), 435290);
   assert.strictEqual(c.ap, 200000);
-  assert.strictEqual(c.m1, 3);
   assert.strictEqual(r2(c.mens1), 78430);
-  assert.strictEqual(c.m2, 18, 'mensualidades hasta el mes anterior a la entrega (sep 2028)');
+  assert.strictEqual(c.maxN, 24);
+  assert.strictEqual(c.m2, 20);
   assert.strictEqual(c.mens2, 15000);
-  assert.strictEqual(r2(c.esc), 3647610);
-  assert.strictEqual(c.pe, '83.8');
+  assert.strictEqual(r2(c.esc), 4352900 - 435290 - 300000);
   assert.strictEqual(r2(c.ap + c.resto + c.seg + c.esc), r2(c.F));
   const cal = C.calendario(c, '2026-11-25');
-  assert.strictEqual(cal.length, 1 + 3 + 18 + 1);
-  assert.strictEqual(C.fecha(cal[3].d), '25 feb 27');
-  assert.strictEqual(cal[4].k, 'Mensualidad 1/18');
-  assert.strictEqual(C.fecha(cal[4].d), '25 mar 27');
-  assert.strictEqual(C.fecha(cal[21].d), '25 ago 28');
-  assert.strictEqual(cal[22].k, 'Contra entrega 83.8%');
-  assert.strictEqual(C.fecha(cal[22].d), '25 sep 28');
+  assert.strictEqual(cal.length, 1 + 3 + 20 + 1);
+  assert.strictEqual(cal[0].k, 'Primer pago enganche');
+  assert.strictEqual(cal[1].k, 'Enganche 10% · 1/3');
+  assert.strictEqual(C.fecha(cal[23].d), '25 oct 28');
+  assert.strictEqual(cal[24].k.startsWith('Contra entrega'), true);
+  assert.strictEqual(C.fecha(cal[24].d), 'A la entrega');
 });
-caso('LT009 (vendida, precio de gerente) · $12k al mes, 12 meses, a escritura', () => {
-  const c = C.calcular(3789858, E('flex'), { inicio: '2026-11-25', entrega: '2028-08', mens: 12000, m2: 12, saldo: 'escritura' });
+caso('sin número de mensualidades usa el máximo; más del máximo se topa', () => {
+  const c = C.calcular(4352900, E('flex'), { inicio: '2026-11-25', maxMeses: MAX });
+  assert.strictEqual(c.m2, 24);
+  const d = C.calcular(4352900, E('flex'), { inicio: '2026-11-25', maxMeses: MAX, m2: 30 });
+  assert.strictEqual(d.m2, 24); assert.strictEqual(d.excedido, true);
+  assert.strictEqual(C.fecha(C.calendario(c, '2026-11-25')[27].d), '25 feb 29');
+});
+caso('modo %: 10% del precio en 20 meses calcula la mensualidad', () => {
+  const c = C.calcular(4352900, E('flex'), { inicio: '2026-11-25', maxMeses: MAX, m2: 20, modo: 'pct', pctMens: 10 });
+  assert.strictEqual(r2(c.seg), 435290);
+  assert.strictEqual(r2(c.mens2), 21764.5);
+  assert.strictEqual(c.pe, '80');
+});
+caso('LT009 (vendida, precio de gerente) · $12k × 12', () => {
+  const c = C.calcular(3789858, E('flex'), { inicio: '2026-11-25', maxMeses: MAX, mens: 12000, m2: 12 });
   assert.strictEqual(r2(c.mens1), 59661.93);
-  assert.strictEqual(c.m2, 12);
   assert.strictEqual(r2(c.esc), 3789858 - 378985.8 - 144000);
-  assert.strictEqual(c.saldoEntrega, false);
-  const cal = C.calendario(c, '2026-11-25');
-  assert.strictEqual(cal[cal.length - 1].k.startsWith('Escrituración'), true);
 });
 caso('mensualidades que rebasan el precio se recortan', () => {
-  const c = C.calcular(1000000, E('flex'), { inicio: '2026-11-25', entrega: '2028-08', mens: 100000, m2: 50 });
+  const c = C.calcular(1000000, E('flex'), { inicio: '2026-11-25', maxMeses: MAX, mens: 100000, m2: 20 });
   assert.strictEqual(c.recortado, true);
   assert.strictEqual(c.m2, 9);
   assert.ok(c.esc >= 0);
