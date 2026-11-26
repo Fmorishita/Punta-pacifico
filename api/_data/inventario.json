@@ -1,7 +1,7 @@
 {
- "_nota": "Inventario público. Las casas vendidas van sin precio: su precio solo lo entrega /api/cotizador-gerente (variable COTIZADOR_VENDIDAS en Vercel).",
- "fuente": "Lista Precio C1 al 03Sep26 Punta Pacifico..xlsx",
- "lista": "Lista de precios al 03 Sep 26",
+ "_nota": "Precios de la lista oficial. Casas vendidas: si la lista no trae precio, va null y el precio sale de COTIZADOR_VENDIDAS (Vercel).",
+ "fuente": "Lista de precios PP (actualización 29/06/2026)",
+ "lista": "Lista de precios 29 jun 26",
  "lotes": [
   {
    "num": 1,
@@ -98,7 +98,7 @@
    "nombre": "PPA0092RLT009",
    "tipo": "2R",
    "m2": 183.56,
-   "precio": null,
+   "precio": 3982780,
    "vendida": true,
    "entrega": "2028-08"
   },
@@ -109,7 +109,7 @@
    "nombre": "PPA0103RLT010",
    "tipo": "3R",
    "m2": 299.83,
-   "precio": null,
+   "precio": 4489569,
    "vendida": true,
    "entrega": "2028-10"
   },
@@ -120,7 +120,7 @@
    "nombre": "PPA0113RLT011",
    "tipo": "3R",
    "m2": 330.38,
-   "precio": 4747680,
+   "precio": 4847680,
    "vendida": false,
    "entrega": "2028-10"
   },
@@ -164,7 +164,7 @@
    "nombre": "PPA0152RLT015",
    "tipo": "2R",
    "m2": 183.34,
-   "precio": null,
+   "precio": 3982780,
    "vendida": true,
    "entrega": "2028-11"
   },
@@ -362,7 +362,7 @@
    "nombre": "PPA0333RLT033",
    "tipo": "3R",
    "m2": 240.78,
-   "precio": null,
+   "precio": 4631146,
    "vendida": true,
    "entrega": "2028-08"
   },
@@ -549,7 +549,7 @@
    "nombre": "PPA0503RLT050",
    "tipo": "3R",
    "m2": 183.02,
-   "precio": 4890483.15,
+   "precio": 4890483,
    "vendida": false,
    "entrega": "2029-01"
   },
@@ -560,7 +560,7 @@
    "nombre": "PPA0513RLT051",
    "tipo": "3R",
    "m2": 183.02,
-   "precio": 4890483.15,
+   "precio": 4890483,
    "vendida": false,
    "entrega": "2029-01"
   },
@@ -571,7 +571,7 @@
    "nombre": "PPA0523RLT052",
    "tipo": "3R",
    "m2": 183.02,
-   "precio": 4890483.15,
+   "precio": 4890483,
    "vendida": false,
    "entrega": "2029-01"
   },
@@ -582,7 +582,7 @@
    "nombre": "PPA0533RLT053",
    "tipo": "3R",
    "m2": 183.02,
-   "precio": 4890483.15,
+   "precio": 4890483,
    "vendida": false,
    "entrega": "2029-01"
   },
@@ -593,7 +593,7 @@
    "nombre": "PPA0543RLT054",
    "tipo": "3R",
    "m2": 183.02,
-   "precio": 4890483.15,
+   "precio": 4890483,
    "vendida": false,
    "entrega": "2029-01"
   },
@@ -604,7 +604,7 @@
    "nombre": "PPA0552RLT055",
    "tipo": "3R",
    "m2": 183.02,
-   "precio": 4890483.15,
+   "precio": 4890483,
    "vendida": false,
    "entrega": "2029-02"
   }

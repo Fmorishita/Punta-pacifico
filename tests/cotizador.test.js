@@ -21,7 +21,7 @@ function caso(nombre, fn) {
 }
 
 // [esquema, ajustes, F, apartado, m1, mens1, m2, mens2, escritura]
-const P11 = lote(11).precio;
+const P11 = 4747680; // casos del cotizador original (lista 03 sep 26)
 const casos = [
   ['e50 sin descuento', 'e50', {}, 4747680, 50000, 3, 141589.33, 24, 19782.00, 3798144.00],
   ['e50 descuento 5%', 'e50', { descOn: true }, 4510296, 50000, 3, 133676.53, 24, 18792.90, 3608236.80],
@@ -140,12 +140,13 @@ caso('fechas sin desbordar: 31 oct + 1 mes = 30 nov', () => {
 });
 
 console.log('Inventario');
-caso('55 lotes, 7 vendidos sin precio público, 48 disponibles', () => {
+caso('55 lotes, 7 vendidos y precios de la lista oficial (29 jun 26)', () => {
   assert.strictEqual(inv.lotes.length, 55);
-  const v = inv.lotes.filter(l => l.vendida);
-  assert.strictEqual(v.length, 7);
-  assert.ok(v.every(l => l.precio == null), 'una casa vendida trae precio en el archivo público');
+  assert.strictEqual(inv.lotes.filter(l => l.vendida).length, 7);
   assert.ok(inv.lotes.filter(l => !l.vendida).every(l => l.precio > 0));
+  const p = n => lote(n).precio;
+  assert.strictEqual(p(9), 3982780); assert.strictEqual(p(11), 4847680); assert.strictEqual(p(1), 3982780);
+  assert.strictEqual(p(10), 4489569); assert.strictEqual(p(33), 4631146); assert.strictEqual(p(55), 4890483);
 });
 
 console.log('\n' + ok + ' bien, ' + fallas + ' con error');
