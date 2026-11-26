@@ -140,10 +140,13 @@ caso('fechas sin desbordar: 31 oct + 1 mes = 30 nov', () => {
 });
 
 console.log('Inventario');
-caso('55 lotes, 7 vendidos y precios de la lista oficial (29 jun 26)', () => {
+caso('55 lotes, vendidas/reservadas del mapa y precios de la lista oficial (29 jun 26)', () => {
   assert.strictEqual(inv.lotes.length, 55);
-  assert.strictEqual(inv.lotes.filter(l => l.vendida).length, 7);
+  assert.deepStrictEqual(inv.lotes.filter(l => l.vendida).map(l => l.num), [10, 12, 15, 27, 28, 32, 33, 34, 35]);
+  assert.deepStrictEqual(inv.lotes.filter(l => l.reservada).map(l => l.num), [1, 11, 40, 41]);
+  assert.strictEqual(lote(9).vendida, false);
   assert.ok(inv.lotes.filter(l => !l.vendida).every(l => l.precio > 0));
+  assert.deepStrictEqual(inv.lotes.filter(l => l.precio == null).map(l => l.num), [28, 32, 34]);
   const p = n => lote(n).precio;
   assert.strictEqual(p(9), 3982780); assert.strictEqual(p(11), 4847680); assert.strictEqual(p(1), 3982780);
   assert.strictEqual(p(10), 4489569); assert.strictEqual(p(33), 4631146); assert.strictEqual(p(55), 4890483);

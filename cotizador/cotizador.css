@@ -81,6 +81,7 @@ textarea.ta:focus { border-color: var(--ocean); box-shadow: 0 0 0 3px rgba(46, 1
 .chip.gold { background: #f5ecd8; color: #7a5b1c; }
 .chip.ok { background: #e3f1ea; color: var(--ok); }
 .chip.off { background: #eceae7; color: #7d7a76; }
+.chip.res { background: #fbefcf; color: #8a6410; }
 .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 
 /* ---------- Estructura ---------- */
