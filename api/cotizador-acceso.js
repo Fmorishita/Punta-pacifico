@@ -73,7 +73,7 @@ function lotes() {
   let v = {};
   try { v = JSON.parse(process.env.COTIZADOR_VENDIDAS || '{}') || {}; } catch (e) { v = {}; }
   return INVENTARIO.lotes.map(l => {
-    if (!l.vendida) return l;
+    if (!l.vendida || l.precio != null) return l;
     const p = Number(v[String(l.num)]);
     return Object.assign({}, l, { precio: p > 0 ? p : null });
   });

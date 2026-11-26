@@ -21,7 +21,7 @@
   const LIBS = ['/assets/cotizador/vendor/html2canvas-1.4.1.min.js', '/assets/cotizador/vendor/jspdf-2.5.1.umd.min.js'];
   const W = 1224, H = 792; // marco de coordenadas de los pines
   const TOKEN_KEY = 'pp-cotizador-sesion';
-  const COL = { '2R': ['#c9a96e', '#8f7440', '#2b2110'], '3R': ['#2e6d8e', '#1d4c66', '#ffffff'], vend: ['#d3d0cb', '#a9a49c', '#5f5a53'], sel: ['#d8693f', '#a94a26', '#ffffff'] };
+  const COL = { '2R': ['#c9a96e', '#8f7440', '#2b2110'], '3R': ['#2e6d8e', '#1d4c66', '#ffffff'], vend: ['#d3d0cb', '#a9a49c', '#5f5a53'], res: ['#f2c14e', '#c9962a', '#3d2c05'], sel: ['#d8693f', '#a94a26', '#ffffff'] };
 
   const AJ0 = () => ({ desc: null, ap: null, m1: null, m2: null, engOn: false, eng: null, pct1: null, mens: null, modo: null, pctMens: null });
   const S = {
@@ -35,6 +35,9 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pct = (v, total) => (v / total * 100).toFixed(3) + '%';
   const lblAp = c => c.resto > 0 ? 'Primer pago enganche' : 'Pago inicial enganche';
+  const estado = l => l.vendida ? 'Vendida' : l.reservada ? 'Reservada' : 'Disponible';
+  const ocupada = l => !!(l && (l.vendida || l.reservada));
+  const chipEstado = l => l.vendida ? '<span class="chip off">Vendida</span>' : l.reservada ? '<span class="chip res">Reservada</span>' : '<span class="chip ok">Disponible</span>';
   const tipoTxt = t => t === '2R' ? '2 recámaras' : '3 recámaras';
 
   // ---------- Datos derivados ----------
@@ -46,7 +49,7 @@
   const dias = () => S.vigencia != null ? S.vigencia : S.cfg.vigenciaDias;
   const venceEl = () => C.masDias(new Date(), dias());
   const texto = k => ((S.cfg && S.cfg.textos[k]) || '').replace(/\{dias\}/g, dias());
-  const legales = () => [S.lote && S.lote.vendida ? texto('legalVendida') : '', esq() && esq().tipo === 'flexible' ? texto('legalPersonalizado') : ''].filter(Boolean).map(t => t.replace(/\.\s*$/, ''));
+  const legales = () => [S.lote && ocupada(S.lote) ? texto('legalVendida') : '', esq() && esq().tipo === 'flexible' ? texto('legalPersonalizado') : ''].filter(Boolean).map(t => t.replace(/\.\s*$/, ''));
 
   // ---------- Acceso ----------
   async function api(payload) {
@@ -190,16 +193,16 @@
   function pinEstilo(n) {
     const lo = S.lotes.find(l => l.num === n);
     const sel = !!(S.lote && S.lote.num === n);
-    const vend = !!(lo && lo.vendida);
+    const vend = ocupada(lo);
     const filtro = S.filtro === '2R' || S.filtro === '3R' ? S.filtro : null;
     const marcado = !!(filtro && lo && lo.tipo === filtro && !vend);
     const apagado = !!((filtro && !marcado && !sel) || (S.filtro === 'disp' && vend && !sel));
     const r = sel ? 13.5 : (marcado ? 11.5 : 10);
-    const col = sel ? COL.sel : vend ? COL.vend : COL[lo ? lo.tipo : '3R'];
+    const col = sel ? COL.sel : lo && lo.vendida ? COL.vend : lo && lo.reservada ? COL.res : COL[lo ? lo.tipo : '3R'];
     return {
       lo, sel, r, op: apagado ? 0.25 : 1, bw: (sel ? 2 : 1.4) + 'px',
       fill: col[0], stroke: col[1], fg: col[2],
-      titulo: lo ? lo.lote + ' · ' + lo.tipo + (vend ? ' · Vendida' : '') : 'Lote ' + n,
+      titulo: lo ? lo.lote + ' · ' + lo.tipo + (vend ? ' · ' + estado(lo) : '') : 'Lote ' + n,
       cursor: puedeElegir(lo) ? 'pointer' : 'not-allowed'
     };
   }
@@ -233,23 +236,23 @@
         'font-size:clamp(7px,' + (r * 1.15 / zw * 100).toFixed(3) + 'vw,13px);opacity:' + s.op + ';background:' + s.fill + ';color:' + s.fg + ';border-width:1px;border-color:' + s.stroke + '">' + n + '</span>';
     }).join('');
     return '<div class="card"><div class="card-top"><div><h2 class="h2">Ubicación de ' + esc(L.lote) + '</h2><p class="sub2">Entrega estimada ' + esc(C.anio(L.entrega)) + '</p></div>' +
-      (L.vendida ? '<span class="chip off">Vendida</span>' : '<span class="chip ok">Disponible</span>') + '</div>' +
+      chipEstado(L) + '</div>' +
       '<div class="zoom" style="aspect-ratio:' + (zw / zh).toFixed(4) + '">' +
       '<img src="' + IMG[S.modo] + '" alt="Detalle del sembrado" style="left:' + pct(-zx, zw) + ';top:' + pct(-zy, zh) + ';width:' + pct(W, zw) + ';height:' + pct(H, zh) + '">' +
       marcas + '</div></div>';
   }
 
   function vistaLote() {
-    const disp = S.lotes.filter(l => !l.vendida).length;
+    const disp = S.lotes.filter(l => !ocupada(l)).length;
     const filtro = S.filtro;
     const seg = (acc, op, act) => '<div class="seg" role="group">' + op.map(([k, t]) =>
       '<button type="button" data-acc="' + acc + '" data-v="' + k + '" aria-pressed="' + (act === k) + '">' + t + '</button>').join('') + '</div>';
-    const lotes = S.lotes.filter(l => filtro === 'todos' || (filtro === 'disp' ? !l.vendida : l.tipo === filtro)).map(l => {
+    const lotes = S.lotes.filter(l => filtro === 'todos' || (filtro === 'disp' ? !ocupada(l) : l.tipo === filtro)).map(l => {
       const sel = !!(S.lote && S.lote.num === l.num);
-      const col = l.vendida ? COL.vend : COL[l.tipo];
-      return '<button type="button" class="lote' + (l.vendida ? ' vendida' : '') + '" data-acc="lote" data-v="' + l.num + '" aria-pressed="' + sel + '"' +
+      const col = l.vendida ? COL.vend : l.reservada ? COL.res : COL[l.tipo];
+      return '<button type="button" class="lote' + (ocupada(l) ? ' vendida' : '') + '" data-acc="lote" data-v="' + l.num + '" aria-pressed="' + sel + '"' +
         (puedeElegir(l) ? '' : ' aria-disabled="true" title="Sin precio de casa vendida"') + '>' +
-        '<span class="fila"><span class="lt">' + esc(l.lote) + '</span>' + (l.vendida ? '<span class="chip off">Vendida</span>' : '<span class="dot" style="background:' + col[0] + '"></span>') + '</span>' +
+        '<span class="fila"><span class="lt">' + esc(l.lote) + '</span>' + (ocupada(l) ? chipEstado(l) : '<span class="dot" style="background:' + col[0] + '"></span>') + '</span>' +
         '<span class="m">' + tipoTxt(l.tipo) + ' · ' + l.m2.toFixed(2) + ' m²</span>' +
         '<span class="p">' + (l.precio != null ? C.mx(l.precio) : '—') + '</span></button>';
     }).join('');
@@ -258,7 +261,7 @@
         '<div class="card-top"><div><h2 class="h2">Sembrado ' + esc(S.cfg.proyecto.cluster) + '</h2><p class="sub2">' + disp + ' disponibles de ' + S.lotes.length + ' · toca un número para elegir</p></div>' +
         seg('modo', [['color', 'Plano'], ['bn', 'B/N'], ['render', 'Render']], S.modo) + '</div>' +
         htmlPlano() +
-        '<div class="leyenda">' + ley(COL['2R'], '2 recámaras') + ley(COL['3R'], '3 recámaras') + ley(COL.sel, 'Seleccionada') + ley(COL.vend, 'Vendida') + '</div>' +
+        '<div class="leyenda">' + ley(COL['2R'], '2 recámaras') + ley(COL['3R'], '3 recámaras') + ley(COL.sel, 'Seleccionada') + ley(COL.res, 'Reservada') + ley(COL.vend, 'Vendida') + '</div>' +
       '</div>' +
       htmlZoom() +
       '<div class="card"><div class="card-top"><h2 class="h2">Casas</h2>' +
